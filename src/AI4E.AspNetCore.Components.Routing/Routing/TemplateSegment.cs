@@ -1,7 +1,7 @@
 ﻿/* License
  * --------------------------------------------------------------------------------------------------------------------
  * This file is part of the AI4E distribution.
- *   (https://github.com/AI4E/AI4E.AspNetCore.Components.ExtensibleRouter)
+ *   (https://github.com/AI4E/AI4E.AspNetCore.Components.Extensions)
  * 
  * MIT License
  * 
