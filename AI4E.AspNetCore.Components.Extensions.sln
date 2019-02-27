@@ -21,6 +21,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Routing.DefaultRouterSample
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Routing.DefaultRouterSample.App", "samples\Routing.DefaultRouterSample\Routing.DefaultRouterSample.App\Routing.DefaultRouterSample.App.csproj", "{4A1B36B3-5A64-4310-817F-AFB19EE02811}"
 EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Routing.DefaultRouterSample", "Routing.DefaultRouterSample", "{C3B40625-5C78-4120-B2E8-17EEC7D84F72}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -45,8 +47,9 @@ Global
 	EndGlobalSection
 	GlobalSection(NestedProjects) = preSolution
 		{FECFA794-DFA7-481B-8276-653553EFC402} = {3223E91F-E9A3-4A36-A5E1-F2C009D67FBB}
-		{28855B8A-6A23-45E9-BC3B-A9998680474A} = {9C031D20-5627-4DFD-BFC4-9B4E63C93BFA}
-		{4A1B36B3-5A64-4310-817F-AFB19EE02811} = {9C031D20-5627-4DFD-BFC4-9B4E63C93BFA}
+		{28855B8A-6A23-45E9-BC3B-A9998680474A} = {C3B40625-5C78-4120-B2E8-17EEC7D84F72}
+		{4A1B36B3-5A64-4310-817F-AFB19EE02811} = {C3B40625-5C78-4120-B2E8-17EEC7D84F72}
+		{C3B40625-5C78-4120-B2E8-17EEC7D84F72} = {9C031D20-5627-4DFD-BFC4-9B4E63C93BFA}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {D8030DD9-09A2-4F79-92CD-8B7751913317}
