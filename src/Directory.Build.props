@@ -6,7 +6,10 @@
   <Import Project="$(_ParentDirectoryBuildPropsPath)" Condition="Exists('$(_ParentDirectoryBuildPropsPath)')"/>
 
   <PropertyGroup>
-    <IsPackable>true</IsPackable>
+    <IsPackable>true</IsPackable> 
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(Configuration)' == 'Release'">
     <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
   </PropertyGroup>
 </Project>
