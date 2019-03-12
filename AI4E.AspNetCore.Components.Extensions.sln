@@ -17,11 +17,19 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "AI4E.AspNetCore.Components.
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "samples", "samples", "{9C031D20-5627-4DFD-BFC4-9B4E63C93BFA}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Routing.DefaultRouterSample.Server", "samples\Routing.DefaultRouterSample\Routing.DefaultRouterSample.Server\Routing.DefaultRouterSample.Server.csproj", "{28855B8A-6A23-45E9-BC3B-A9998680474A}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Routing.DefaultRouterSample.Server", "samples\Routing.DefaultRouterSample\Routing.DefaultRouterSample.Server\Routing.DefaultRouterSample.Server.csproj", "{28855B8A-6A23-45E9-BC3B-A9998680474A}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Routing.DefaultRouterSample.App", "samples\Routing.DefaultRouterSample\Routing.DefaultRouterSample.App\Routing.DefaultRouterSample.App.csproj", "{4A1B36B3-5A64-4310-817F-AFB19EE02811}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Routing.DefaultRouterSample.App", "samples\Routing.DefaultRouterSample\Routing.DefaultRouterSample.App\Routing.DefaultRouterSample.App.csproj", "{4A1B36B3-5A64-4310-817F-AFB19EE02811}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Routing.DefaultRouterSample", "Routing.DefaultRouterSample", "{C3B40625-5C78-4120-B2E8-17EEC7D84F72}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AI4E.AspNetCore.Blazor.Logging", "src\AI4E.AspNetCore.Blazor.Logging\AI4E.AspNetCore.Blazor.Logging.csproj", "{10232748-8F67-41F7-84C1-FA4F70558265}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Logging.Sample", "Logging.Sample", "{A1DEE546-F1F3-48B7-B7AC-5285A418AD6B}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Logging.Sample.Client", "samples\Logging.Sample\Logging.Sample.Client\Logging.Sample.Client.csproj", "{CCA28E42-C2B3-4D3B-9B03-7496D7FA43F3}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Logging.Sample.Server", "samples\Logging.Sample\Logging.Sample.Server\Logging.Sample.Server.csproj", "{E43032DF-99FD-4F62-A7D2-A11F433DAF81}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -41,6 +49,18 @@ Global
 		{4A1B36B3-5A64-4310-817F-AFB19EE02811}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{4A1B36B3-5A64-4310-817F-AFB19EE02811}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{4A1B36B3-5A64-4310-817F-AFB19EE02811}.Release|Any CPU.Build.0 = Release|Any CPU
+		{10232748-8F67-41F7-84C1-FA4F70558265}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{10232748-8F67-41F7-84C1-FA4F70558265}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{10232748-8F67-41F7-84C1-FA4F70558265}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{10232748-8F67-41F7-84C1-FA4F70558265}.Release|Any CPU.Build.0 = Release|Any CPU
+		{CCA28E42-C2B3-4D3B-9B03-7496D7FA43F3}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{CCA28E42-C2B3-4D3B-9B03-7496D7FA43F3}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{CCA28E42-C2B3-4D3B-9B03-7496D7FA43F3}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{CCA28E42-C2B3-4D3B-9B03-7496D7FA43F3}.Release|Any CPU.Build.0 = Release|Any CPU
+		{E43032DF-99FD-4F62-A7D2-A11F433DAF81}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{E43032DF-99FD-4F62-A7D2-A11F433DAF81}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{E43032DF-99FD-4F62-A7D2-A11F433DAF81}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{E43032DF-99FD-4F62-A7D2-A11F433DAF81}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -50,6 +70,10 @@ Global
 		{28855B8A-6A23-45E9-BC3B-A9998680474A} = {C3B40625-5C78-4120-B2E8-17EEC7D84F72}
 		{4A1B36B3-5A64-4310-817F-AFB19EE02811} = {C3B40625-5C78-4120-B2E8-17EEC7D84F72}
 		{C3B40625-5C78-4120-B2E8-17EEC7D84F72} = {9C031D20-5627-4DFD-BFC4-9B4E63C93BFA}
+		{10232748-8F67-41F7-84C1-FA4F70558265} = {3223E91F-E9A3-4A36-A5E1-F2C009D67FBB}
+		{A1DEE546-F1F3-48B7-B7AC-5285A418AD6B} = {9C031D20-5627-4DFD-BFC4-9B4E63C93BFA}
+		{CCA28E42-C2B3-4D3B-9B03-7496D7FA43F3} = {A1DEE546-F1F3-48B7-B7AC-5285A418AD6B}
+		{E43032DF-99FD-4F62-A7D2-A11F433DAF81} = {A1DEE546-F1F3-48B7-B7AC-5285A418AD6B}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {D8030DD9-09A2-4F79-92CD-8B7751913317}
