@@ -51,7 +51,7 @@ using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Microsoft.JSInterop;
 
-namespace BookStore.Logging
+namespace AI4E.AspNetCore.Blazor.Logging
 {
     [ProviderAlias("Console")]
     public sealed class ConsoleLoggerProvider : ILoggerProvider, ISupportExternalScope

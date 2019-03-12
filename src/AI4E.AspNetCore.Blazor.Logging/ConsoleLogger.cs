@@ -50,7 +50,7 @@ using System.Text;
 using Microsoft.Extensions.Logging;
 using Microsoft.JSInterop;
 
-namespace BookStore.Logging
+namespace AI4E.AspNetCore.Blazor.Logging
 {
     internal sealed class ConsoleLogger : ILogger
     {

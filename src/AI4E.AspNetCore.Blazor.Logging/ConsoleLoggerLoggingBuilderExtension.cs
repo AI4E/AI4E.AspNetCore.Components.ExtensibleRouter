@@ -28,7 +28,7 @@
  */
 
 using System;
-using BookStore.Logging;
+using AI4E.AspNetCore.Blazor.Logging;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 
