@@ -39,6 +39,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
+using System.Runtime.Loader;
 using Microsoft.AspNetCore.Components;
 
 namespace AI4E.AspNetCore.Components
@@ -48,6 +49,9 @@ namespace AI4E.AspNetCore.Components
     /// </summary>
     public static class ComponentResolver
     {
+        // TODO: Rename
+        public static Assembly BlazorAssembly { get; } = typeof(IComponent).Assembly;
+
         /// <summary>
         /// Lists all the types 
         /// </summary>
@@ -55,19 +59,38 @@ namespace AI4E.AspNetCore.Components
         /// <returns></returns>
         public static IEnumerable<Type> ResolveComponents(Assembly appAssembly)
         {
-            var blazorAssembly = typeof(IComponent).Assembly;
+            return EnumerateComponentAssemblies(appAssembly).SelectMany(a => GetComponents(a));
+        }
 
-            return EnumerateAssemblies(appAssembly.GetName(), blazorAssembly, new HashSet<Assembly>(new AssemblyComparer()))
-                .SelectMany(a => a.ExportedTypes)
-                .Where(t => typeof(IComponent).IsAssignableFrom(t));
+        public static IEnumerable<Type> GetComponents(Assembly assembly)
+        {
+            return assembly.ExportedTypes.Where(t => typeof(IComponent).IsAssignableFrom(t));
+        }
+
+        public static IEnumerable<Assembly> EnumerateComponentAssemblies(Assembly assembly)
+        {
+            return EnumerateComponentAssemblies(assembly, AssemblyLoadContext.Default);
+        }
+
+        public static IEnumerable<Assembly> EnumerateComponentAssemblies(Assembly assembly, AssemblyLoadContext loadContext)
+        {
+            if (assembly == null)
+                throw new ArgumentNullException(nameof(assembly));
+
+            if (loadContext == null)
+                throw new ArgumentNullException(nameof(loadContext));
+
+            var assemblyName = assembly.GetName();
+            var visited = new HashSet<Assembly>(new AssemblyComparer());
+            return EnumerateAssemblies(assemblyName, loadContext, visited);
         }
 
         private static IEnumerable<Assembly> EnumerateAssemblies(
             AssemblyName assemblyName,
-            Assembly blazorAssembly,
+            AssemblyLoadContext loadContext,
             HashSet<Assembly> visited)
         {
-            var assembly = Assembly.Load(assemblyName);
+            var assembly = loadContext.LoadFromAssemblyName(assemblyName);
             if (visited.Contains(assembly))
             {
                 // Avoid traversing visited assemblies.
@@ -75,7 +98,7 @@ namespace AI4E.AspNetCore.Components
             }
             visited.Add(assembly);
             var references = assembly.GetReferencedAssemblies();
-            if (!references.Any(r => string.Equals(r.FullName, blazorAssembly.FullName, StringComparison.Ordinal)))
+            if (!references.Any(r => string.Equals(r.FullName, BlazorAssembly.FullName, StringComparison.Ordinal)))
             {
                 // Avoid traversing references that don't point to blazor (like netstandard2.0)
                 yield break;
@@ -85,7 +108,7 @@ namespace AI4E.AspNetCore.Components
                 yield return assembly;
 
                 // Look at the list of transitive dependencies for more components.
-                foreach (var reference in references.SelectMany(r => EnumerateAssemblies(r, blazorAssembly, visited)))
+                foreach (var reference in references.SelectMany(r => EnumerateAssemblies(r, loadContext, visited)))
                 {
                     yield return reference;
                 }

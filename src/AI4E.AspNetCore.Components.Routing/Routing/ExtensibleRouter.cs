@@ -52,12 +52,11 @@ namespace AI4E.AspNetCore.Components.Routing
     {
         private const string _layoutNameOfPage = "Page";
         private const string _layoutNameOfPageParameters = "PageParameters";
-
-
         private static readonly char[] _queryOrHashStartChar = new[] { '?', '#' };
         private RenderHandle _renderHandle;
         private string _baseUri;
         private string _locationAbsolute;
+        private bool _isInitialized;
 
         [Inject] private IUriHelper UriHelper { get; set; }
 
@@ -77,14 +76,30 @@ namespace AI4E.AspNetCore.Components.Routing
             UriHelper.OnLocationChanged += OnLocationChanged;
         }
 
+        protected virtual void OnInit() { }
+
         /// <inheritdoc />
         public Task SetParametersAsync(ParameterCollection parameters)
         {
+            if (!_isInitialized)
+            {
+                OnInit();
+                _isInitialized = true;
+            }
+
             parameters.SetParameterProperties(this);
-            var types = ResolveRoutableComponents();
-            Routes = RouteTable.Create(types);
+            UpdateRouteTable();
             Refresh();
             return Task.CompletedTask;
+        }
+
+        protected void UpdateRouteTable()
+        {
+            if (!_isInitialized)
+                return;
+
+            var types = ResolveRoutableComponents();
+            Routes = RouteTable.Create(types);
         }
 
         /// <summary>
@@ -92,11 +107,6 @@ namespace AI4E.AspNetCore.Components.Routing
         /// </summary>
         /// <returns>An enumerable of types of components that can be routed to.</returns>
         protected abstract IEnumerable<Type> ResolveRoutableComponents();
-
-        protected virtual void NoRouteMatching(RenderHandle renderHandle, string location)
-        {
-            throw new InvalidOperationException($"'{nameof(DefaultRouter)}' cannot find any component with a route for '/{location}', and no fallback is defined.");
-        }
 
         /// <inheritdoc />
         public void Dispose()
@@ -130,10 +140,16 @@ namespace AI4E.AspNetCore.Components.Routing
             builder.CloseComponent();
         }
 
-        private void Refresh()
+        protected virtual void OnBeforeRefresh(string locationPath) { }
+        protected virtual void OnAfterRefresh(bool success) { }
+
+        protected void Refresh()
         {
             var locationPath = UriHelper.ToBaseRelativePath(_baseUri, _locationAbsolute);
             locationPath = StringUntilAny(locationPath, _queryOrHashStartChar);
+
+            OnBeforeRefresh(locationPath);
+
             var context = new RouteContext(locationPath);
             Routes.Route(context);
 
@@ -145,16 +161,19 @@ namespace AI4E.AspNetCore.Components.Routing
                 }
                 else
                 {
-                    NoRouteMatching(_renderHandle, locationPath);
-                    return;
+                    OnAfterRefresh(false);
+                    throw new InvalidOperationException($"'{nameof(DefaultRouter)}' cannot find any component with a route for '/{locationPath}', and no fallback is defined.");
                 }
             }
 
             if (!typeof(IComponent).IsAssignableFrom(context.Handler))
             {
+                OnAfterRefresh(false);
                 throw new InvalidOperationException($"The type {context.Handler.FullName} " +
                     $"does not implement {typeof(IComponent).FullName}.");
             }
+
+            OnAfterRefresh(true);
 
             _renderHandle.Render(builder => Render(builder, context.Handler, context.Parameters));
         }
