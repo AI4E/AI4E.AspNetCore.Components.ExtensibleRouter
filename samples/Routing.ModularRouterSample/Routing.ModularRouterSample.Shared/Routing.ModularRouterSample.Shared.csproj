@@ -9,4 +9,8 @@
     <PackageReference Include="Microsoft.AspNetCore.Components.Build" Version="3.0.0-preview3-19153-02" PrivateAssets="all" />
   </ItemGroup>
 
+  <ItemGroup>
+    <ProjectReference Include="..\..\..\src\AI4E.AspNetCore.Components.Extensibility\AI4E.AspNetCore.Components.Extensibility.csproj" />
+  </ItemGroup>
+
 </Project>

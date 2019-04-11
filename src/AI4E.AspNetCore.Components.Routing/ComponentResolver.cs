@@ -64,7 +64,7 @@ namespace AI4E.AspNetCore.Components
 
         public static IEnumerable<Type> GetComponents(Assembly assembly)
         {
-            return assembly.ExportedTypes.Where(t => typeof(IComponent).IsAssignableFrom(t));
+            return assembly.ExportedTypes.Where(t => typeof(IComponent).IsAssignableFrom(t) && !t.IsInterface);
         }
 
         public static IEnumerable<Assembly> EnumerateComponentAssemblies(Assembly assembly)
