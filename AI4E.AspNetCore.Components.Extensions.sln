@@ -35,7 +35,7 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Routing.ModularRouterSample
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Routing.ModularRouterSample", "samples\Routing.ModularRouterSample\Routing.ModularRouterSample\Routing.ModularRouterSample.csproj", "{6C6635D8-73FB-4E0D-9E7B-E5DAF00E5F43}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Routing.ModularRouterPlugin", "samples\Routing.ModularRouterSample\Routing.ModularRouterPlugin\Routing.ModularRouterPlugin.csproj", "{4F53A251-A4C7-4C8B-AD74-62014A1CA4C8}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Routing.ModularRouterSample.Plugin", "samples\Routing.ModularRouterSample\Routing.ModularRouterSample.Plugin\Routing.ModularRouterSample.Plugin.csproj", "{4F53A251-A4C7-4C8B-AD74-62014A1CA4C8}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "AI4E.AspNetCore.Components.Extensibility", "src\AI4E.AspNetCore.Components.Extensibility\AI4E.AspNetCore.Components.Extensibility.csproj", "{CBF2D14C-E964-459A-ADF1-665868A3F3A3}"
 EndProject

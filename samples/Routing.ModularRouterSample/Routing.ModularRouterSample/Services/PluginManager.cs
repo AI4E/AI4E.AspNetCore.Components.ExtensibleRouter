@@ -21,7 +21,7 @@ namespace Routing.ModularRouterSample.Services
             _hostAssemblies = AppDomain.CurrentDomain.GetAssemblies().ToDictionary(p => p.GetName(), p => p, new AssemblyNameComparer());
         }
 
-        private const string _pluginName = "Routing.ModularRouterPlugin";
+        private const string _pluginName = "Routing.ModularRouterSample.Plugin";
 
         private static string GetPluginPath()
         {

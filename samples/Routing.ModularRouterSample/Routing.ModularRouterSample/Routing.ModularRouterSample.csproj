@@ -17,7 +17,7 @@
   </ItemGroup>
   
   <Target Name="PostBuild" AfterTargets="PostBuildEvent">
-    <Exec Command="dotnet build $(ProjectDir)\..\Routing.ModularRouterPlugin -c $(Configuration)" />
+    <Exec Command="dotnet build $(ProjectDir)\..\Routing.ModularRouterSample.Plugin -c $(Configuration)" />
   </Target>
 
 </Project>
