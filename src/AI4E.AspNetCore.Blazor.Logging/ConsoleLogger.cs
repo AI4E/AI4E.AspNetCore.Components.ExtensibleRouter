@@ -308,9 +308,19 @@ namespace AI4E.AspNetCore.Blazor.Logging
         }
     }
 
+    /// <summary>
+    /// Represents options that control the <see cref="ConsoleLogger"/> behavior.
+    /// </summary>
     public class ConsoleLoggerOptions
     {
+        /// <summary>
+        /// Gets or sets a boolean value indicating whether the logger shall include scoped in the output.
+        /// </summary>
         public bool IncludeScopes { get; set; }
+
+        /// <summary>
+        /// Gets or sets a boolean value indicating whether colors are disabled in the output.
+        /// </summary>
         public bool DisableColors { get; set; }
     }
 }

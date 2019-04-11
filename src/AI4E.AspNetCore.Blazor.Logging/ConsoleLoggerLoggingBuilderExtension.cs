@@ -34,14 +34,28 @@ using Microsoft.Extensions.DependencyInjection.Extensions;
 
 namespace Microsoft.Extensions.Logging
 {
+    /// <summary>
+    /// Contains extensions for the <see cref="ILoggingBuilder"/> type.
+    /// </summary>
     public static class ConsoleLoggerLoggingBuilderExtension
     {
+        /// <summary>
+        /// Adds browser console logging to the <see cref="ILoggingBuilder"/>.
+        /// </summary>
+        /// <param name="builder">The logging builder.</param>
+        /// <returns>The logging builder with the browser console logging added.</returns>
         public static ILoggingBuilder AddBrowserConsole(this ILoggingBuilder builder)
         {
             builder.Services.TryAddEnumerable(ServiceDescriptor.Singleton<ILoggerProvider, ConsoleLoggerProvider>());
             return builder;
         }
 
+        /// <summary>
+        /// Adds browser console logging to the <see cref="ILoggingBuilder"/>.
+        /// </summary>
+        /// <param name="builder">The logging builder.</param>
+        /// <param name="configure">A configuration for the <see cref="ConsoleLoggerOptions"/>.</param>
+        /// <returns>The logging builder with the browser console logging added.</returns>
         public static ILoggingBuilder AddBrowserConsole(this ILoggingBuilder builder, Action<ConsoleLoggerOptions> configure)
         {
             if (configure == null)

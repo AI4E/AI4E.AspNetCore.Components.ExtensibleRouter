@@ -49,29 +49,47 @@ namespace AI4E.AspNetCore.Components
     /// </summary>
     public static class ComponentResolver
     {
-        // TODO: Rename
-        public static Assembly BlazorAssembly { get; } = typeof(IComponent).Assembly;
+        /// <summary>
+        /// Gets the assembly that defines the <see cref="IComponent"/> interface.
+        /// </summary>
+        public static Assembly BlazorAssembly { get; } = typeof(IComponent).Assembly; // TODO: Rename
 
         /// <summary>
-        /// Lists all the types 
+        /// Returns all types of components that are defined in the specified assembly or a dependency assembly.
         /// </summary>
-        /// <param name="appAssembly"></param>
-        /// <returns></returns>
-        public static IEnumerable<Type> ResolveComponents(Assembly appAssembly)
+        /// <param name="assembly">The origin assembly.</param>
+        /// <returns>An <see cref="IEnumerable{T}"/> of component types.</returns>
+        public static IEnumerable<Type> ResolveComponents(Assembly assembly)
         {
-            return EnumerateComponentAssemblies(appAssembly).SelectMany(a => GetComponents(a));
+            return EnumerateComponentAssemblies(assembly).SelectMany(a => GetComponents(a));
         }
 
+        /// <summary>
+        /// Returns all types of components that are defined in the specified assembly.
+        /// </summary>
+        /// <param name="assembly">The assembly that contains the component types.</param>
+        /// <returns>An <see cref="IEnumerable{T}"/> of component types.</returns>
         public static IEnumerable<Type> GetComponents(Assembly assembly)
         {
             return assembly.ExportedTypes.Where(t => typeof(IComponent).IsAssignableFrom(t) && !t.IsInterface);
         }
 
+        /// <summary>
+        /// Enumerates all assemblies that are dependencies of the specified assembly and contain components.
+        /// </summary>
+        /// <param name="assembly">The origin assembly.</param>
+        /// <returns>An <see cref="IEnumerable{T}"/> of assemblies that contain components.</returns>
         public static IEnumerable<Assembly> EnumerateComponentAssemblies(Assembly assembly)
         {
             return EnumerateComponentAssemblies(assembly, AssemblyLoadContext.Default);
         }
 
+        /// <summary>
+        /// Enumerates all assemblies that are dependencies of the specified assembly and contain components.
+        /// </summary>
+        /// <param name="assembly">The origin assembly.</param>
+        /// <param name="loadContext">The <see cref="AssemblyLoadContext"/> the origin assembly was loaded from.</param>
+        /// <returns>An <see cref="IEnumerable{T}"/> of assemblies that contain components.</returns>
         public static IEnumerable<Assembly> EnumerateComponentAssemblies(Assembly assembly, AssemblyLoadContext loadContext)
         {
             if (assembly == null)

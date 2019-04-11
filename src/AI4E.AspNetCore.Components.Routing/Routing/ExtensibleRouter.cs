@@ -76,6 +76,9 @@ namespace AI4E.AspNetCore.Components.Routing
             UriHelper.OnLocationChanged += OnLocationChanged;
         }
 
+        /// <summary>
+        /// Called when the router initializes.
+        /// </summary>
         protected virtual void OnInit() { }
 
         /// <inheritdoc />
@@ -93,6 +96,9 @@ namespace AI4E.AspNetCore.Components.Routing
             return Task.CompletedTask;
         }
 
+        /// <summary>
+        /// Updates the route table.
+        /// </summary>
         protected void UpdateRouteTable()
         {
             if (!_isInitialized)
@@ -140,9 +146,21 @@ namespace AI4E.AspNetCore.Components.Routing
             builder.CloseComponent();
         }
 
+        /// <summary>
+        /// Called before refreshing the router.
+        /// </summary>
+        /// <param name="locationPath">The location the user navigated to.</param>
         protected virtual void OnBeforeRefresh(string locationPath) { }
+
+        /// <summary>
+        /// Called after refreshing the router.
+        /// </summary>
+        /// <param name="success">A boolean value indicating routing success.</param>
         protected virtual void OnAfterRefresh(bool success) { }
 
+        /// <summary>
+        /// Refreshes the router.
+        /// </summary>
         protected void Refresh()
         {
             var locationPath = UriHelper.ToBaseRelativePath(_baseUri, _locationAbsolute);

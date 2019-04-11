@@ -53,6 +53,9 @@ using Microsoft.JSInterop;
 
 namespace AI4E.AspNetCore.Blazor.Logging
 {
+    /// <summary>
+    /// Represents a provider for <see cref="ConsoleLogger"/>s.
+    /// </summary>
     [ProviderAlias("Console")]
     public sealed class ConsoleLoggerProvider : ILoggerProvider, ISupportExternalScope
     {
@@ -62,6 +65,11 @@ namespace AI4E.AspNetCore.Blazor.Logging
         private IDisposable _optionsReloadToken;
         private IExternalScopeProvider _scopeProvider = NullExternalScopeProvider.Instance;
 
+        /// <summary>
+        /// Creates a new instance of the <see cref="ConsoleLoggerProvider"/> type.
+        /// </summary>
+        /// <param name="options">An <see cref="IOptionsMonitor{TOptions}"/> used to access the logger options.</param>
+        /// <param name="jsRuntime">The <see cref="IJSRuntime"/> to invoke js functions.</param>
         public ConsoleLoggerProvider(IOptionsMonitor<ConsoleLoggerOptions> options, IJSRuntime jsRuntime)
         {
             if (jsRuntime == null)
