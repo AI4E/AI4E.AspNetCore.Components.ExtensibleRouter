@@ -37,6 +37,8 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Routing.ModularRouterSample
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Routing.ModularRouterPlugin", "samples\Routing.ModularRouterSample\Routing.ModularRouterPlugin\Routing.ModularRouterPlugin.csproj", "{4F53A251-A4C7-4C8B-AD74-62014A1CA4C8}"
 EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "AI4E.AspNetCore.Components.Extensibility", "src\AI4E.AspNetCore.Components.Extensibility\AI4E.AspNetCore.Components.Extensibility.csproj", "{CBF2D14C-E964-459A-ADF1-665868A3F3A3}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -75,6 +77,10 @@ Global
 		{4F53A251-A4C7-4C8B-AD74-62014A1CA4C8}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{4F53A251-A4C7-4C8B-AD74-62014A1CA4C8}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{4F53A251-A4C7-4C8B-AD74-62014A1CA4C8}.Release|Any CPU.Build.0 = Release|Any CPU
+		{CBF2D14C-E964-459A-ADF1-665868A3F3A3}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{CBF2D14C-E964-459A-ADF1-665868A3F3A3}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{CBF2D14C-E964-459A-ADF1-665868A3F3A3}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{CBF2D14C-E964-459A-ADF1-665868A3F3A3}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -91,6 +97,7 @@ Global
 		{8D77D66F-349F-46DF-A893-CBB206C6A953} = {9C031D20-5627-4DFD-BFC4-9B4E63C93BFA}
 		{6C6635D8-73FB-4E0D-9E7B-E5DAF00E5F43} = {8D77D66F-349F-46DF-A893-CBB206C6A953}
 		{4F53A251-A4C7-4C8B-AD74-62014A1CA4C8} = {8D77D66F-349F-46DF-A893-CBB206C6A953}
+		{CBF2D14C-E964-459A-ADF1-665868A3F3A3} = {3223E91F-E9A3-4A36-A5E1-F2C009D67FBB}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {D8030DD9-09A2-4F79-92CD-8B7751913317}

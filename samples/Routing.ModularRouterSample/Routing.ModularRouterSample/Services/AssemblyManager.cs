@@ -2,7 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Reflection;
 using AI4E.AspNetCore.Components;
-using AI4E.AspNetCore.Components.Routing;
+using AI4E.AspNetCore.Components.Extensibility;
 
 namespace Routing.ModularRouterSample.Services
 {

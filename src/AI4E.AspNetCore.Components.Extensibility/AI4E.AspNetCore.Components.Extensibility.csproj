@@ -1,0 +1,12 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>netstandard2.0</TargetFramework>
+    <RootNamespace>AI4E.AspNetCore.Components</RootNamespace>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\AI4E.AspNetCore.Components.Routing\AI4E.AspNetCore.Components.Routing.csproj" />
+  </ItemGroup>
+
+</Project>

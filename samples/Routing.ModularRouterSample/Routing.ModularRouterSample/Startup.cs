@@ -1,4 +1,4 @@
-using AI4E.AspNetCore.Components.Routing;
+using AI4E.AspNetCore.Components.Extensibility;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.DependencyInjection;

@@ -1,7 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Reflection;
+using AI4E.AspNetCore.Components.Extensibility;
 using Microsoft.AspNetCore.Components;
 
 namespace AI4E.AspNetCore.Components.Routing
@@ -37,6 +37,7 @@ namespace AI4E.AspNetCore.Components.Routing
                 Refresh();
         }
 
+        /// <inheritdoc />
         protected override void OnAfterRefresh(bool success)
         {
             _lastRoutingSuccessful = success;
@@ -52,11 +53,5 @@ namespace AI4E.AspNetCore.Components.Routing
 
             base.Dispose(disposing);
         }
-    }
-
-    public interface IAssemblySource
-    {
-        IReadOnlyCollection<Assembly> Assemblies { get; }
-        event EventHandler AssembliesChanged;
     }
 }
