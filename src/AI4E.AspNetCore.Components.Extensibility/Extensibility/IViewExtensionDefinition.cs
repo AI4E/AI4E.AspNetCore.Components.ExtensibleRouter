@@ -35,4 +35,10 @@ namespace AI4E.AspNetCore.Components.Extensibility
     /// Marks types to be view extension definition or implementing a view extension defintion.
     /// </summary>
     public interface IViewExtensionDefinition : IComponent { }
+
+    /// <summary>
+    /// Marks types to be view extension definition or implementing a view extension defintion.
+    /// </summary>
+    /// <typeparam name="TContext">The type of context parameter.</typeparam>
+    public interface IViewExtensionDefinition<TContext> : IViewExtensionDefinition { }
 }

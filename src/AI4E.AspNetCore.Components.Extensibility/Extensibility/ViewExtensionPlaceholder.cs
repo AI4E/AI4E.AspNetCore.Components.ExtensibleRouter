@@ -45,12 +45,15 @@ namespace AI4E.AspNetCore.Components.Extensibility
     public sealed class ViewExtensionPlaceholder<TViewExtension> : IComponent, IDisposable
         where TViewExtension : IViewExtensionDefinition
     {
+        internal const string ContextName = nameof(Context);
+
         private RenderHandle _renderHandle;
         private bool _isInit;
         private ParameterCollection _parameters;
         private HashSet<Type> _viewExtensions;
 
         [Inject] private IAssemblySource AssemblySource { get; set; }
+        [Parameter] private object Context { get; set; }
 
         /// <inheritdoc />
         public void Configure(RenderHandle renderHandle)
@@ -67,6 +70,8 @@ namespace AI4E.AspNetCore.Components.Extensibility
         public Task SetParametersAsync(ParameterCollection parameters)
         {
             _parameters = parameters;
+            Context = _parameters.GetValueOrDefault<object>(ContextName);
+
             if (!_isInit)
             {
                 _isInit = true;
@@ -144,16 +149,12 @@ namespace AI4E.AspNetCore.Components.Extensibility
             }
         }
 
-#pragma warning disable IDE0059, IDE0060 // TODO: Remove
-
         private void ApplyParameters(RenderTreeBuilder builder)
         {
-            foreach (var parameter in _parameters)
+            if (Context != null)
             {
-                throw new NotImplementedException(); // TODO
+                builder.AddAttribute(0, ContextName, Context);
             }
         }
-
-#pragma warning restore IDE0059, IDE0060
     }
 }
