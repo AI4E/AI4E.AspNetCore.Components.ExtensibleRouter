@@ -16,7 +16,8 @@
   <PropertyGroup>
     <RepositoryRoot Condition="'$(RepositoryRoot)' == ''">$(MSBuildThisFileDirectory)</RepositoryRoot>
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
-    <LangVersion>latest</LangVersion>
+    <LangVersion>8.0</LangVersion>
+    <RazorLangVersion>3.0</RazorLangVersion>
     <SolutionDir>$(RepositoryRoot)</SolutionDir>
     <NoWarn>NU5105</NoWarn>
   </PropertyGroup>
@@ -43,7 +44,17 @@
 
   <PropertyGroup>
     <NetStandardVersion>netstandard2.0</NetStandardVersion>
+    <NetStandardVersions>$(NetStandardVersion);netstandard2.1</NetStandardVersions>
+    <NetCoreAppVersion>netcoreapp3.0</NetCoreAppVersion>
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
   </PropertyGroup>
+
+  <PropertyGroup Condition="'$(TargetFramework)' == 'netstandard2.1'">
+    <DefineConstants>$(DefineConstants);SUPPORTS_ASYNC_ENUMERABLE;SUPPORTS_ASYNC_DISPOSABLE;SUPPORTS_SPAN_APIS</DefineConstants>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(TargetFramework)' == 'netcoreapp3.0'">
+    <DefineConstants>$(DefineConstants);SUPPORTS_ASYNC_ENUMERABLE;SUPPORTS_ASYNC_DISPOSABLE;SUPPORTS_SPAN_APIS</DefineConstants>
+</PropertyGroup>
   
 </Project>

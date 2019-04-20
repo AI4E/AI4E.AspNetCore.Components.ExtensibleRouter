@@ -1,6 +1,6 @@
 using System;
 
-namespace Routing.DefaultRouterSample.App.Services
+namespace Routing.DefaultRouterSample.Services
 {
     public class WeatherForecast
     {

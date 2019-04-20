@@ -3,7 +3,6 @@ using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
-using Routing.ModularRouterSample.Components;
 using Routing.ModularRouterSample.Services;
 
 namespace Routing.ModularRouterSample
@@ -21,7 +20,7 @@ namespace Routing.ModularRouterSample
             services.AddSingleton<AssemblyManager>();
             services.AddSingleton<IAssemblySource>(p => p.GetRequiredService<AssemblyManager>());
 
-            services.AddRazorComponents();
+            services.AddServerSideBlazor();
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
@@ -31,19 +30,15 @@ namespace Routing.ModularRouterSample
             {
                 app.UseDeveloperExceptionPage();
             }
-            else
-            {
-                // The default HSTS value is 30 days. You may want to change this for production scenarios, see https://aka.ms/aspnetcore-hsts.
-                app.UseHsts();
-            }
 
-            app.UseHttpsRedirection();
             app.UseStaticFiles();
 
-            app.UseRouting(routes =>
+            app.UseRouting();
+
+            app.UseEndpoints(endpoints =>
             {
-                routes.MapRazorPages();
-                routes.MapComponentHub<App>("app");
+                endpoints.MapBlazorHub();
+                endpoints.MapFallbackToPage("/Index");
             });
         }
     }

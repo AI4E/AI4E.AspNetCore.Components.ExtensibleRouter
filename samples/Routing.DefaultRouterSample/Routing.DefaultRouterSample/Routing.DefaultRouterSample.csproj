@@ -10,13 +10,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\..\src\AI4E.AspNetCore.Components.Extensibility\AI4E.AspNetCore.Components.Extensibility.csproj" />
     <ProjectReference Include="..\..\..\src\AI4E.AspNetCore.Components.Routing\AI4E.AspNetCore.Components.Routing.csproj" />
-    <ProjectReference Include="..\Routing.ModularRouterSample.Shared\Routing.ModularRouterSample.Shared.csproj" />
   </ItemGroup>
-  
-  <Target Name="PostBuild" AfterTargets="PostBuildEvent">
-    <Exec Command="dotnet build $(ProjectDir)\..\Routing.ModularRouterSample.Plugin -c $(Configuration)" />
-  </Target>
 
 </Project>

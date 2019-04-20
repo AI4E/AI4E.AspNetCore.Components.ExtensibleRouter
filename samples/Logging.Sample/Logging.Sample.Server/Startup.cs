@@ -33,11 +33,6 @@ namespace Logging.Sample.Server
                 app.UseBlazorDebugging();
             }
 
-            app.UseMvc(routes =>
-            {
-                routes.MapRoute(name: "default", template: "{controller}/{action}/{id?}");
-            });
-
             app.UseBlazor<Client.Startup>();
         }
     }

@@ -1,0 +1,6 @@
+﻿@*
+    The Router component displays whichever component has a @page
+    directive matching the current URI.
+*@
+@using AI4E.AspNetCore.Components.Routing
+<DefaultRouter AppAssembly="@typeof(App).Assembly" FallbackComponent="@typeof(_404)" />
