@@ -111,7 +111,8 @@ To pass data from the placeholder to the implementation, the definition can impl
 
 This looks like:
 ```
-public interface IIndexPageViewExtensionDefinition : IViewExtensionDefinition<IndexPageViewExtensionContext> { }
+public interface IIndexPageViewExtensionDefinition 
+   : IViewExtensionDefinition<IndexPageViewExtensionContext> { }
 
 public sealed class IndexPageViewExtensionContext
 {
@@ -172,7 +173,10 @@ To pass a context to the view extension, use the Context parameter of the `ViewE
 
 ```
 @functions{
-    private IndexPageViewExtensionContext ViewExtensionContext { get; } = new IndexPageViewExtensionContext();
+    private IndexPageViewExtensionContext ViewExtensionContext { get; } 
+       = new IndexPageViewExtensionContext();
 }
-<ViewExtensionPlaceholder TViewExtension="IIndexPageViewExtensionDefinition" Context="ViewExtensionContext" />
+<ViewExtensionPlaceholder 
+   TViewExtension="IIndexPageViewExtensionDefinition" 
+   Context="ViewExtensionContext" />
 ```
