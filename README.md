@@ -56,14 +56,15 @@ public void ConfigureServices(IServiceCollection services)
 The project provides extensions and utilities for Asp.Net Core Razor component based projects to be split into modules/plugins. It implements a custom router that is able to update its route table when the set of installed modules change. Additionally there is a concept called view extensions that can extend existing components with additional content, for example to render nav-menu entries or extend the edit form for an entity in a modular (microservice oriented) way.
 
 ## Module installation
-The project does *NOT* implement the installation of modules/plugin. You can use the AI4E.AspNetCore.Modularity package for this. It can be found [here](https://github.com/AI4E/AI4E/tree/master/src/AI4E.AspNetCore.Components.Modularity).  
-<aside class="warning">
-The AI4E.AspNetCore.Components.Modularity is in actively development currently and is not ready for production use.
-</aside>
-To implement your own module loader you can base on the [PluginManager](https://github.com/AI4E/AI4E.AspNetCore.Components.Extensions/blob/master/samples/Routing.ModularRouterSample/Routing.ModularRouterSample/Services/PluginManager.cs) type in the sample project.  
-<aside class="warning">
-The PluginManager can be used for server-side blazor projects only.
-</aside>
+The project does *NOT* implement the installation of modules/plugin. You can use the `AI4E.AspNetCore.Modularity` package for this. It can be found [here](https://github.com/AI4E/AI4E/tree/master/src/AI4E.AspNetCore.Components.Modularity).  
+
+| ⚠️ The `AI4E.AspNetCore.Components.Modularity` project is in actively development currently and is not ready for production use.|
+| --- |
+
+To implement your own module loader you can base on the `PluginManager` type in the sample project.  
+
+| ⚠️ The `PluginManager` can be used for server-side blazor projects only.|
+| --- |
 
 ## Installation
 Install the nuget package via the Visual studio GUI or  
@@ -168,4 +169,10 @@ To render all view extensions of a type, place a `AI4E.AspNetCore.Components.Ext
 ```
 
 To pass a context to the view extension, use the Context parameter of the `ViewExtensionPlaceholder` type.
+
+```
+@functions{
+    private IndexPageViewExtensionContext ViewExtensionContext { get; } = new IndexPageViewExtensionContext();
+}
+<ViewExtensionPlaceholder TViewExtension="IIndexPageViewExtensionDefinition" Context="ViewExtensionContext" />
 ```
