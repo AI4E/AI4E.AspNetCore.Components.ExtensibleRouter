@@ -17,19 +17,19 @@ For using a built-in router, a `using` directive has to be placed in your compon
 ```
 
 ### Implementing a custom router
-The `ExtensibleRouter` base type has virtual methods that can be overriden to plug-in custom routing behavior.  
+The `ExtensibleRouter` base type has virtual methods that can be overridden to plug-in custom routing behavior.  
 
 The `void OnInit()` method is called when the router is initialized before any routing operation is performed.
 
-The router calls the abstract method `IEnumerable<Type> ResolveRoutableComponents()` when it needs to update its route table. The method should return all routable component type. The `DefaultRouter` loads these types via the publically available `ComponentResolver` type.  
+The router calls the abstract method `IEnumerable<Type> ResolveRoutableComponents()` when it needs to update its route table. The method should return all routable component types. The `DefaultRouter` loads these types via the publically available `ComponentResolver` type.  
 
-Custom action can be registered before and after each render operation by overriden the methods ´void OnBeforeRefresh(string locationPath)´ and ´void OnAfterRefresh(bool success)´ respectively. ´locationPath´ contains the location the user navigated to, ´success´ is a boolean value indicating whether the routing operation was successful.  
+Custom action can be registered before and after each render operation by overriding the methods ´void OnBeforeRefresh(string locationPath)´ and ´void OnAfterRefresh(bool success)´ respectively. ´locationPath´ contains the location the user navigated to, ´success´ is a boolean value indicating whether the routing operation was successful.  
 
 The router can trigger an update of the route table by invoking the `void UpdateRouteTable()` method and can initiate a routing operation by invoking `void Refresh()`. Be aware that `UpdateRouteTable` does not refresh and `Refresh` does not update the route table. To do both, call `UpdateRouteTable` first and Refresh thereafter.
 
-To override the actual render operation, there is a virtual method `void Render(RenderTreeBuilder builder, Type handler, IDictionary<string, object> parameters)` that is called to render the page of type `handler` with the specified parameters. Be aware that this sets the layout by default and the layout has to be set manually when overriden.  
+To override the actual render operation, there is a virtual method `void Render(RenderTreeBuilder builder, Type handler, IDictionary<string, object> parameters)` that is called to render the page of type `handler` with the specified parameters. Be aware that this sets the layout by default and the layout has to be set manually when overridden.  
 
-When the router is disposed, its calls the `void Dispose(bool disposing)` method. If this is overriden in a derviced class, the base implementation should be called to guarantee safe cleanup.  
+When the router is disposed, it calls the `void Dispose(bool disposing)` method. If this is overridden in a derviced class, the base implementation should be called to guarantee safe cleanup.  
 
 ## AI4E.AspNetCore.Blazor.Logging
 AI4E.AspNetCore.Blazor.Logging contains a console logger for client-side blazor projects. 
@@ -56,9 +56,9 @@ public void ConfigureServices(IServiceCollection services)
 The project provides extensions and utilities for Asp.Net Core Razor component based projects to be split into modules/plugins. It implements a custom router that is able to update its route table when the set of installed modules change. Additionally there is a concept called view extensions that can extend existing components with additional content, for example to render nav-menu entries or extend the edit form for an entity in a modular (microservice oriented) way.
 
 ## Module installation
-The project does *NOT* implement the installation of modules/plugin. You can use the `AI4E.AspNetCore.Modularity` package for this. It can be found [here](https://github.com/AI4E/AI4E/tree/master/src/AI4E.AspNetCore.Components.Modularity).  
+The project does *NOT* implement the installation of modules/plugins. You can use the `AI4E.AspNetCore.Modularity` package for this. It can be found [here](https://github.com/AI4E/AI4E/tree/master/src/AI4E.AspNetCore.Components.Modularity).  
 
-| ⚠️ The `AI4E.AspNetCore.Components.Modularity` project is in actively development currently and is not ready for production use.|
+| ⚠️ The `AI4E.AspNetCore.Components.Modularity` project is in active development currently and is not ready for production use.|
 | --- |
 
 To implement your own module loader you can base on the `PluginManager` type in the sample project.  
@@ -95,7 +95,7 @@ A default implementation of the `IAssemblySource` interface can be found on the 
 A view extension consists of three parts.
 * A view extension definition that is a name for the view extension
 * A view extension implementation
-* A view extension placeholder that defined the place the view extensions are rendered
+* A view extension placeholder that defines the place the view extensions are rendered
 
 In order that the view extension is detected, the assembly that implements the view extension implementation has to be part of the collection of assemblies returned from the `IAssemblySource.Assemblies` property.
 
