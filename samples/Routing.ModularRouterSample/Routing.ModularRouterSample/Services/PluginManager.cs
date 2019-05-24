@@ -5,6 +5,7 @@ using System.Linq;
 using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Runtime.Loader;
+using AI4E.AspNetCore.Components.Extensibility;
 
 namespace Routing.ModularRouterSample.Services
 {
