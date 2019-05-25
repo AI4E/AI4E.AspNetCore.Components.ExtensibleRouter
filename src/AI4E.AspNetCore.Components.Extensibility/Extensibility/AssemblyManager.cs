@@ -29,7 +29,6 @@
 
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Reflection;
 
 namespace AI4E.AspNetCore.Components.Extensibility
@@ -39,29 +38,30 @@ namespace AI4E.AspNetCore.Components.Extensibility
     /// </summary>
     public class AssemblyManager : IAssemblySource
     {
-        private readonly HashSet<Assembly> _assemblies;
+        private readonly HashSet<Assembly> _assemblies = new HashSet<Assembly>();
 
         /// <summary>
         /// Creates a new instance of the <see cref="AssemblyManager"/> type.
         /// </summary>
-        /// <param name="comparer">
-        /// An <see cref="IEqualityComparer{T}"/> used to compare assemblies in the manager, or
-        /// <c>null</c> to use the default comparer.
-        /// </param>
-        /// <param name="addDefaultAssemblies">
-        /// A boolean value indicating whether to add the default assemblies to the manager.
-        /// </param>
-        public AssemblyManager(IEqualityComparer<Assembly> comparer = null, bool addDefaultAssemblies = true)
-        {
-            _assemblies = new HashSet<Assembly>(
-                addDefaultAssemblies ? GetDefaultAssemblies() : Enumerable.Empty<Assembly>(),
-                comparer);
-        }
+        public AssemblyManager() { }
 
-        private static IEnumerable<Assembly> GetDefaultAssemblies()
+        /// <summary>
+        /// Creates a new instance of the <see cref="AssemblyManager"/> type that
+        /// initially contains all assemblies that are dependencies of the specified
+        /// assembly and contain components.
+        /// </summary>
+        /// <param name="entryAssembly">The entry assembly.</param>
+        /// <exception cref="ArgumentNullException">Thrown if <paramref name="entryAssembly"/> is <c>null</c>.</exception>
+        public AssemblyManager(Assembly entryAssembly)
         {
-            var entryAssembly = Assembly.GetEntryAssembly();
-            return ComponentResolver.EnumerateComponentAssemblies(entryAssembly);
+            if (entryAssembly == null)
+                throw new ArgumentNullException(nameof(entryAssembly));
+
+            var assemblies = ComponentResolver.EnumerateComponentAssemblies(entryAssembly);
+            foreach (var assembly in assemblies)
+            {
+                _assemblies.Add(assembly);
+            }
         }
 
         /// <inheritdoc />

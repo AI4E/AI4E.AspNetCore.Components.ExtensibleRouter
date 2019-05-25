@@ -1,3 +1,5 @@
+using System.Reflection;
+using AI4E.AspNetCore.Components;
 using AI4E.AspNetCore.Components.Extensibility;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
@@ -17,7 +19,7 @@ namespace Routing.ModularRouterSample
                 .AddNewtonsoftJson();
 
             services.AddSingleton<PluginManager>();
-            services.AddSingleton<AssemblyManager>();
+            services.AddSingleton(new AssemblyManager(Assembly.GetEntryAssembly()));
             services.AddSingleton<IAssemblySource>(p => p.GetRequiredService<AssemblyManager>());
 
             services.AddServerSideBlazor();

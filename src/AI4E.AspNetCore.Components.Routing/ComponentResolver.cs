@@ -78,25 +78,12 @@ namespace AI4E.AspNetCore.Components
         /// Enumerates all assemblies that are dependencies of the specified assembly and contain components.
         /// </summary>
         /// <param name="assembly">The origin assembly.</param>
-        /// <returns>An <see cref="IEnumerable{T}"/> of assemblies that contain components.</returns>
-        public static IEnumerable<Assembly> EnumerateComponentAssemblies(Assembly assembly)
-        {
-            return EnumerateComponentAssemblies(assembly, AssemblyLoadContext.Default);
-        }
-
-        /// <summary>
-        /// Enumerates all assemblies that are dependencies of the specified assembly and contain components.
-        /// </summary>
-        /// <param name="assembly">The origin assembly.</param>
         /// <param name="loadContext">The <see cref="AssemblyLoadContext"/> the origin assembly was loaded from.</param>
         /// <returns>An <see cref="IEnumerable{T}"/> of assemblies that contain components.</returns>
-        public static IEnumerable<Assembly> EnumerateComponentAssemblies(Assembly assembly, AssemblyLoadContext loadContext)
+        public static IEnumerable<Assembly> EnumerateComponentAssemblies(Assembly assembly, AssemblyLoadContext loadContext = null)
         {
             if (assembly == null)
                 throw new ArgumentNullException(nameof(assembly));
-
-            if (loadContext == null)
-                throw new ArgumentNullException(nameof(loadContext));
 
             var assemblyName = assembly.GetName();
             var visited = new HashSet<Assembly>(new AssemblyComparer());
@@ -108,7 +95,17 @@ namespace AI4E.AspNetCore.Components
             AssemblyLoadContext loadContext,
             HashSet<Assembly> visited)
         {
-            var assembly = loadContext.LoadFromAssemblyName(assemblyName);
+            Assembly assembly;
+
+            if (loadContext == null)
+            {
+                assembly = Assembly.Load(assemblyName);
+            }
+            else
+            {
+                assembly = loadContext.LoadFromAssemblyName(assemblyName);
+            }
+
             if (visited.Contains(assembly))
             {
                 // Avoid traversing visited assemblies.
