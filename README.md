@@ -8,7 +8,8 @@ For installation and usage instructions see the respective project description i
 | --- | --- | --- | --- |
 | 2019-02-28 | 0.1.0 | YES | Blazor 0.7.0 |
 | 2019-04-20 | 0.2.0 | YES | Asp.Net Core 3.0 preview 4 |
-| 2019 | 0.3.0 | YES | >= Asp.Net Core 3.0 preview 4 |
+| 2019-05-25 | 0.3.0 | YES | Asp.Net Core 3.0 preview 5 |
+| 2019 | 0.4.0 | YES | >= Asp.Net Core 3.0 preview 5 |
 | 2019 | 1.0.0 | NO | Asp.Net Core 3.0 |
 
 # Nuget packages
