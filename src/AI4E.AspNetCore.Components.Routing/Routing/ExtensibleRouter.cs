@@ -47,20 +47,35 @@ namespace AI4E.AspNetCore.Components.Routing
     /// <summary>
     /// A base type for custom component routers.
     /// </summary>
-    public abstract class ExtensibleRouter : IComponent, IDisposable
+    public abstract class ExtensibleRouter : IComponent, IHandleAfterRender, IDisposable
     {
         private static readonly char[] _queryOrHashStartChar = new[] { '?', '#' };
         private RenderHandle _renderHandle;
         private string _baseUri;
         private string _locationAbsolute;
         private bool _isInitialized;
+        private bool _navigationInterceptionEnabled;
 
         [Inject] private IUriHelper UriHelper { get; set; }
+
+        [Inject] private INavigationInterception NavigationInterception { get; set; }
+
+        [Inject] private IComponentContext ComponentContext { get; set; }
 
         /// <summary>
         /// Gets or sets the type of the component that should be used as a fallback when no match is found for the requested route.
         /// </summary>
-        [Parameter] private Type FallbackComponent { get; set; }
+        [Parameter] public RenderFragment NotFoundContent { get; private set; }
+
+        /// <summary>
+        /// The content that will be displayed if the user is not authorized.
+        /// </summary>
+        [Parameter] public RenderFragment<AuthenticationState> NotAuthorizedContent { get; private set; }
+
+        /// <summary>
+        /// The content that will be displayed while asynchronous authorization is in progress.
+        /// </summary>
+        [Parameter] public RenderFragment AuthorizingContent { get; private set; }
 
         private RouteTable Routes { get; set; }
 
@@ -89,7 +104,7 @@ namespace AI4E.AspNetCore.Components.Routing
 
             parameters.SetParameterProperties(this);
             UpdateRouteTable();
-            Refresh();
+            Refresh(isNavigationIntercepted: false);
             return Task.CompletedTask;
         }
 
@@ -140,8 +155,8 @@ namespace AI4E.AspNetCore.Components.Routing
             builder.OpenComponent(0, typeof(PageDisplay));
             builder.AddAttribute(1, nameof(PageDisplay.Page), handler);
             builder.AddAttribute(2, nameof(PageDisplay.PageParameters), parameters);
-            //builder.AddAttribute(3, nameof(PageDisplay.NotAuthorizedContent), NotAuthorizedContent);
-            //builder.AddAttribute(4, nameof(PageDisplay.AuthorizingContent), AuthorizingContent);
+            builder.AddAttribute(3, nameof(PageDisplay.NotAuthorizedContent), NotAuthorizedContent);
+            builder.AddAttribute(4, nameof(PageDisplay.AuthorizingContent), AuthorizingContent);
             builder.CloseComponent();
         }
 
@@ -162,6 +177,11 @@ namespace AI4E.AspNetCore.Components.Routing
         /// </summary>
         protected void Refresh()
         {
+            Refresh(isNavigationIntercepted: false);
+        }
+
+        private void Refresh(bool isNavigationIntercepted)
+        {
             var locationPath = UriHelper.ToBaseRelativePath(_baseUri, _locationAbsolute);
             locationPath = StringUntilAny(locationPath, _queryOrHashStartChar);
 
@@ -170,38 +190,53 @@ namespace AI4E.AspNetCore.Components.Routing
             var context = new RouteContext(locationPath);
             Routes.Route(context);
 
-            if (context.Handler == null)
+            var handlerFound = context.Handler != null;
+            OnAfterRefresh(handlerFound);
+
+            if (handlerFound)
             {
-                if (FallbackComponent != null)
+                if (!typeof(IComponent).IsAssignableFrom(context.Handler))
                 {
-                    context.Handler = FallbackComponent;
+                    throw new InvalidOperationException($"The type {context.Handler.FullName} " +
+                        $"does not implement {typeof(IComponent).FullName}.");
+                }
+
+                _renderHandle.Render(builder => Render(builder, context.Handler, context.Parameters));
+            }
+            else
+            {
+                if (!isNavigationIntercepted && NotFoundContent != null)
+                {
+                    // We did not find a Component that matches the route.
+                    // Only show the NotFoundContent if the application developer programatically got us here i.e we did not
+                    // intercept the navigation. In all other cases, force a browser navigation since this could be non-Blazor content.
+                    _renderHandle.Render(NotFoundContent);
                 }
                 else
                 {
-                    OnAfterRefresh(false);
-                    throw new InvalidOperationException($"'{nameof(DefaultRouter)}' cannot find any component with a route for '/{locationPath}', and no fallback is defined.");
+                    UriHelper.NavigateTo(_locationAbsolute, forceLoad: true);
                 }
             }
-
-            if (!typeof(IComponent).IsAssignableFrom(context.Handler))
-            {
-                OnAfterRefresh(false);
-                throw new InvalidOperationException($"The type {context.Handler.FullName} " +
-                    $"does not implement {typeof(IComponent).FullName}.");
-            }
-
-            OnAfterRefresh(true);
-
-            _renderHandle.Render(builder => Render(builder, context.Handler, context.Parameters));
         }
 
-        private void OnLocationChanged(object sender, LocationChangedEventArgs e)
+        private void OnLocationChanged(object sender, LocationChangedEventArgs args)
         {
-            _locationAbsolute = e.Location;
-            if (_renderHandle.IsInitialized)
+            _locationAbsolute = args.Location;
+            if (_renderHandle.IsInitialized && Routes != null)
             {
-                Refresh();
+                Refresh(args.IsNavigationIntercepted);
             }
+        }
+
+        Task IHandleAfterRender.OnAfterRenderAsync()
+        {
+            if (!_navigationInterceptionEnabled && ComponentContext.IsConnected)
+            {
+                _navigationInterceptionEnabled = true;
+                return NavigationInterception.EnableNavigationInterceptionAsync();
+            }
+
+            return Task.CompletedTask;
         }
     }
 }
