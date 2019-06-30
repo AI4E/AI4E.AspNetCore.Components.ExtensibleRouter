@@ -38,7 +38,6 @@
 using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
-using AI4E.AspNetCore.Components.Layouts;
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.RenderTree;
 using Microsoft.AspNetCore.Components.Routing;
@@ -138,9 +137,11 @@ namespace AI4E.AspNetCore.Components.Routing
         /// <inheritdoc />
         protected virtual void Render(RenderTreeBuilder builder, Type handler, IDictionary<string, object> parameters)
         {
-            builder.OpenComponent(0, typeof(LayoutDisplay));
-            builder.AddAttribute(1, LayoutDisplay.NameOfPage, handler);
-            builder.AddAttribute(2, LayoutDisplay.NameOfPageParameters, parameters);
+            builder.OpenComponent(0, typeof(PageDisplay));
+            builder.AddAttribute(1, nameof(PageDisplay.Page), handler);
+            builder.AddAttribute(2, nameof(PageDisplay.PageParameters), parameters);
+            //builder.AddAttribute(3, nameof(PageDisplay.NotAuthorizedContent), NotAuthorizedContent);
+            //builder.AddAttribute(4, nameof(PageDisplay.AuthorizingContent), AuthorizingContent);
             builder.CloseComponent();
         }
 
