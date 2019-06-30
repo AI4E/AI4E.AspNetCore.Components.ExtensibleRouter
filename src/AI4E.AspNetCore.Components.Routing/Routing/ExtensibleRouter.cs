@@ -38,9 +38,10 @@
 using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
+using AI4E.AspNetCore.Components.Layouts;
 using Microsoft.AspNetCore.Components;
-using Microsoft.AspNetCore.Components.Layouts;
 using Microsoft.AspNetCore.Components.RenderTree;
+using Microsoft.AspNetCore.Components.Routing;
 
 namespace AI4E.AspNetCore.Components.Routing
 {
@@ -49,8 +50,6 @@ namespace AI4E.AspNetCore.Components.Routing
     /// </summary>
     public abstract class ExtensibleRouter : IComponent, IDisposable
     {
-        private const string _layoutNameOfPage = "Page";
-        private const string _layoutNameOfPageParameters = "PageParameters";
         private static readonly char[] _queryOrHashStartChar = new[] { '?', '#' };
         private RenderHandle _renderHandle;
         private string _baseUri;
@@ -140,8 +139,8 @@ namespace AI4E.AspNetCore.Components.Routing
         protected virtual void Render(RenderTreeBuilder builder, Type handler, IDictionary<string, object> parameters)
         {
             builder.OpenComponent(0, typeof(LayoutDisplay));
-            builder.AddAttribute(1, _layoutNameOfPage, handler);
-            builder.AddAttribute(2, _layoutNameOfPageParameters, parameters);
+            builder.AddAttribute(1, LayoutDisplay.NameOfPage, handler);
+            builder.AddAttribute(2, LayoutDisplay.NameOfPageParameters, parameters);
             builder.CloseComponent();
         }
 
@@ -195,9 +194,9 @@ namespace AI4E.AspNetCore.Components.Routing
             _renderHandle.Render(builder => Render(builder, context.Handler, context.Parameters));
         }
 
-        private void OnLocationChanged(object sender, string newAbsoluteUri)
+        private void OnLocationChanged(object sender, LocationChangedEventArgs e)
         {
-            _locationAbsolute = newAbsoluteUri;
+            _locationAbsolute = e.Location;
             if (_renderHandle.IsInitialized)
             {
                 Refresh();

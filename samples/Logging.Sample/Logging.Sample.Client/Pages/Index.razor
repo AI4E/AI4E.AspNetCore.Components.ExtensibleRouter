@@ -12,13 +12,13 @@
     }
 }
 <div>
-    <label>Logmessage: <input bind="@LogMessage" /></label>
+    <label>Logmessage: <input @bind="@LogMessage" /></label>
 </div>
 
 <div>
     <label>
         Loglevel:
-        <select value="@LogLevelX" onchange="@(x => LogLevelX = (LogLevel)Enum.Parse(typeof(LogLevel), (string)x.Value, ignoreCase: true))">
+        <select value="@LogLevelX" @onchange="@(x => LogLevelX = (LogLevel)Enum.Parse(typeof(LogLevel), (string)x.Value, ignoreCase: true))">
             @foreach (var logLevel in Enum.GetValues(typeof(LogLevel)) as LogLevel[])
             {
                 <option value="@logLevel">@logLevel</option>
@@ -28,5 +28,5 @@
 </div>
 
 <div>
-    <input type="button" value="Log" onclick="@Log" />
+    <input type="button" value="Log" @onclick="@Log" />
 </div>

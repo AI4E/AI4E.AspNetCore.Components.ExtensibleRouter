@@ -1,10 +1,9 @@
+using System.Linq;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.ResponseCompression;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
-using Newtonsoft.Json.Serialization;
-using System.Linq;
 
 namespace Logging.Sample.Server
 {
@@ -33,7 +32,14 @@ namespace Logging.Sample.Server
                 app.UseBlazorDebugging();
             }
 
-            app.UseBlazor<Client.Startup>();
+            app.UseClientSideBlazorFiles<Client.Startup>();
+            app.UseRouting();
+
+            app.UseEndpoints(endpoints =>
+            {
+                endpoints.MapDefaultControllerRoute();
+                endpoints.MapFallbackToClientSideBlazor<Client.Startup>("index.html");
+            });
         }
     }
 }
