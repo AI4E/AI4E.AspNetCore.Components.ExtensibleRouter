@@ -10,7 +10,7 @@
     <RepositoryType>git</RepositoryType>
     <IncludeSymbols>true</IncludeSymbols>
     <SymbolPackageFormat>snupkg</SymbolPackageFormat>
-    <Version>0.3.0<!---pre$([System.DateTime]::UtcNow.ToString(yyMMddHH))--></Version>
+    <Version>0.3.1<!---pre$([System.DateTime]::UtcNow.ToString(yyMMddHH))--></Version>
   </PropertyGroup>
 
   <PropertyGroup>
