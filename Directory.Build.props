@@ -10,7 +10,7 @@
     <RepositoryType>git</RepositoryType>
     <IncludeSymbols>true</IncludeSymbols>
     <SymbolPackageFormat>snupkg</SymbolPackageFormat>
-    <Version>0.3.1<!---pre$([System.DateTime]::UtcNow.ToString(yyMMddHH))--></Version>
+    <Version>0.3.2-pre$([System.DateTime]::UtcNow.ToString(yyMMddHH))</Version>
   </PropertyGroup>
 
   <PropertyGroup>
@@ -18,6 +18,7 @@
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
     <LangVersion>8.0</LangVersion>
     <RazorLangVersion>3.0</RazorLangVersion>
+    <TypeScriptToolsVersion>3.5</TypeScriptToolsVersion>
     <SolutionDir>$(RepositoryRoot)</SolutionDir>
     <NoWarn>NU5105</NoWarn>
   </PropertyGroup>
@@ -55,6 +56,10 @@
 
   <PropertyGroup Condition="'$(TargetFramework)' == 'netcoreapp3.0'">
     <DefineConstants>$(DefineConstants);SUPPORTS_ASYNC_ENUMERABLE;SUPPORTS_ASYNC_DISPOSABLE;SUPPORTS_SPAN_APIS</DefineConstants>
-</PropertyGroup>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <TypeScriptCompile Include="content/**/*.ts" />
+  </ItemGroup>
   
 </Project>

@@ -328,3 +328,11 @@ ASALocalRun/
 
 # MFractors (Xamarin productivity tool) working folder 
 .mfractor/
+/src/AI4E.AspNetCore.Blazor.SignalR/content/WebSocketsTransport.js.map
+/src/AI4E.AspNetCore.Blazor.SignalR/content/WebSocketsTransport.js
+/src/AI4E.AspNetCore.Blazor.SignalR/content/ServerSentEventsTransport.js.map
+/src/AI4E.AspNetCore.Blazor.SignalR/content/ServerSentEventsTransport.js
+/src/AI4E.AspNetCore.Blazor.SignalR/content/InitializeSignalR.js.map
+/src/AI4E.AspNetCore.Blazor.SignalR/content/InitializeSignalR.js
+/src/AI4E.AspNetCore.Blazor.SignalR/content/DotNet.js.map
+/src/AI4E.AspNetCore.Blazor.SignalR/content/DotNet.js
