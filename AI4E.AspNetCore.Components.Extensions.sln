@@ -45,6 +45,8 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "SignalR.Sample.Server", "sa
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "SignalR.Sample.App", "samples\SignalR.Sample\SignalR.Sample.App\SignalR.Sample.App.csproj", "{D47CAA82-81D0-4B97-A475-FD46AB3E360C}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AI4E.AspNetCore.Components.Notifications", "src\AI4E.AspNetCore.Components.Notifications\AI4E.AspNetCore.Components.Notifications.csproj", "{A8D466CB-C925-4967-B01B-D3BD9D902436}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -99,6 +101,10 @@ Global
 		{D47CAA82-81D0-4B97-A475-FD46AB3E360C}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{D47CAA82-81D0-4B97-A475-FD46AB3E360C}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{D47CAA82-81D0-4B97-A475-FD46AB3E360C}.Release|Any CPU.Build.0 = Release|Any CPU
+		{A8D466CB-C925-4967-B01B-D3BD9D902436}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{A8D466CB-C925-4967-B01B-D3BD9D902436}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{A8D466CB-C925-4967-B01B-D3BD9D902436}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{A8D466CB-C925-4967-B01B-D3BD9D902436}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -119,6 +125,7 @@ Global
 		{53DF75A1-ABE7-4C9A-8AA2-DFE5684EC0F3} = {9C031D20-5627-4DFD-BFC4-9B4E63C93BFA}
 		{3A868230-E454-4129-B19E-1756ABD42D5D} = {53DF75A1-ABE7-4C9A-8AA2-DFE5684EC0F3}
 		{D47CAA82-81D0-4B97-A475-FD46AB3E360C} = {53DF75A1-ABE7-4C9A-8AA2-DFE5684EC0F3}
+		{A8D466CB-C925-4967-B01B-D3BD9D902436} = {3223E91F-E9A3-4A36-A5E1-F2C009D67FBB}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {D8030DD9-09A2-4F79-92CD-8B7751913317}

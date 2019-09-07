@@ -17,6 +17,7 @@
     <RepositoryRoot Condition="'$(RepositoryRoot)' == ''">$(MSBuildThisFileDirectory)</RepositoryRoot>
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
     <LangVersion>8.0</LangVersion>
+    <WarningsAsErrors>CS8600;CS8602;CS8603;CS8604</WarningsAsErrors>
     <RazorLangVersion>3.0</RazorLangVersion>
     <TypeScriptToolsVersion>3.5</TypeScriptToolsVersion>
     <SolutionDir>$(RepositoryRoot)</SolutionDir>
