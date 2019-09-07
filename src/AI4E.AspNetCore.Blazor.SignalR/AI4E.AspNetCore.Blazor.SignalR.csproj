@@ -7,7 +7,7 @@
   <PropertyGroup>
     <PackageTags>Microsoft ASP.NET Blazor SignalR</PackageTags>
     <PackageReleaseNotes></PackageReleaseNotes>
-    <Description></Description>
+    <Description>AI4E.AspNetCore.Blazor.SignalR is a compatibility package that allows to use the C# Signal-R client within a client-side Blazor application.</Description>
   </PropertyGroup>
 
   <ItemGroup>
