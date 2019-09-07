@@ -3,7 +3,14 @@
     directive matching the current URI.
 *@
 @using AI4E.AspNetCore.Components.Routing
-@{ 
-    RenderFragment notFoundContent = @<_404/>;
-}
-<DefaultRouter AppAssembly="@typeof(App).Assembly" NotFoundContent="notFoundContent" />
+
+<DefaultRouter AppAssembly="@typeof(App).Assembly">
+    <Found Context="routeData">
+        <RouteView RouteData="@routeData" DefaultLayout="@typeof(MainLayout)" />
+    </Found>
+    <NotFound>
+        <LayoutView Layout="@typeof(MainLayout)">
+            <_404 />
+        </LayoutView>
+    </NotFound>
+</DefaultRouter>

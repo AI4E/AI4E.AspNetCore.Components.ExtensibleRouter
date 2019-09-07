@@ -39,8 +39,6 @@ namespace AI4E.AspNetCore.Components.Routing
 {
     internal class RouteTemplate
     {
-        public static readonly char[] _separators = new[] { '/' };
-
         public RouteTemplate(string templateText, TemplateSegment[] segments)
         {
             TemplateText = templateText;

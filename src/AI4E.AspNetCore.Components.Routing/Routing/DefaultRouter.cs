@@ -43,8 +43,7 @@ using Microsoft.AspNetCore.Components;
 namespace AI4E.AspNetCore.Components.Routing
 {
     /// <summary>
-    /// A component that displays whichever other component corresponds to the
-    /// current navigation location.
+    /// A component that supplies route data corresponding to the current navigation state.
     /// </summary>
     public class DefaultRouter : ExtensibleRouter
     {
@@ -52,7 +51,7 @@ namespace AI4E.AspNetCore.Components.Routing
         /// Gets or sets the assembly that should be searched, along with its referenced
         /// assemblies, for components matching the URI.
         /// </summary>
-        [Parameter] private Assembly AppAssembly { get; set; }
+        [Parameter] public Assembly AppAssembly { get; set; }
 
         /// <inheritdoc />
         protected override IEnumerable<Type> ResolveRoutableComponents()
