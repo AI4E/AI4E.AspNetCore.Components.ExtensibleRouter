@@ -37,13 +37,13 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "AI4E.AspNetCore.Components.
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Routing.ModularRouterSample.Shared", "samples\Routing.ModularRouterSample\Routing.ModularRouterSample.Shared\Routing.ModularRouterSample.Shared.csproj", "{0E639B8A-BAD4-41E1-959A-A9258FE6330D}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AI4E.AspNetCore.Blazor.SignalR", "src\AI4E.AspNetCore.Blazor.SignalR\AI4E.AspNetCore.Blazor.SignalR.csproj", "{1D31FB8F-C877-4A50-B438-E17045CADE50}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "AI4E.AspNetCore.Blazor.SignalR", "src\AI4E.AspNetCore.Blazor.SignalR\AI4E.AspNetCore.Blazor.SignalR.csproj", "{1D31FB8F-C877-4A50-B438-E17045CADE50}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "SignalR.Sample", "SignalR.Sample", "{53DF75A1-ABE7-4C9A-8AA2-DFE5684EC0F3}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SignalR.Sample.Server", "samples\SignalR.Sample\SignalR.Sample.Server\SignalR.Sample.Server.csproj", "{3A868230-E454-4129-B19E-1756ABD42D5D}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "SignalR.Sample.Server", "samples\SignalR.Sample\SignalR.Sample.Server\SignalR.Sample.Server.csproj", "{3A868230-E454-4129-B19E-1756ABD42D5D}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SignalR.Sample.App", "samples\SignalR.Sample\SignalR.Sample.App\SignalR.Sample.App.csproj", "{D47CAA82-81D0-4B97-A475-FD46AB3E360C}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "SignalR.Sample.App", "samples\SignalR.Sample\SignalR.Sample.App\SignalR.Sample.App.csproj", "{D47CAA82-81D0-4B97-A475-FD46AB3E360C}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

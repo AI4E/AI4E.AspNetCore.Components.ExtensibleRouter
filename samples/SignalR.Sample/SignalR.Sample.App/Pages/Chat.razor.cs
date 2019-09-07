@@ -49,24 +49,27 @@ using Microsoft.JSInterop;
 
 namespace SignalR.Sample.App.Pages
 {
-    public class ChatComponent : ComponentBase
+    public abstract class Chat_ : ComponentBase
     {
-        [Inject] private HttpClient _http { get; set; }
-        [Inject] private ILogger<ChatComponent> _logger { get; set; }
-        [Inject] private IJSRuntime _jsRuntime { get; set; }
-        internal string _toEverybody { get; set; }
-        internal string _toConnection { get; set; }
-        internal string _connectionId { get; set; }
-        internal string _toMe { get; set; }
-        internal string _toGroup { get; set; }
-        internal string _groupName { get; set; }
-        internal List<string> _messages { get; set; } = new List<string>();
+        [Inject] private HttpClient Http { get; set; }
+        [Inject] private ILogger<Chat_> Logger { get; set; }
+        [Inject] private IJSRuntime JsRuntime { get; set; }
+        [Inject] private NavigationManager NavigationManager { get; set; }
+        private protected string ToEverybody { get; set; }
+        private protected string ToConnection { get; set; }
+        private protected string ConnectionId { get; set; }
+        private protected string ToMe { get; set; }
+        private protected string ToGroup { get; set; }
+        private protected string GroupName { get; set; }
+        private protected List<string> Messages { get; set; } = new List<string>();
 
         private IDisposable _objectHandle;
         private IDisposable _listHandle;
         private HubConnection _connection;
 
-        protected override async Task OnInitAsync()
+        private protected Chat_() { }
+
+        protected override async Task OnInitializedAsync()
         {
             var factory = new HubConnectionBuilder();
 
@@ -75,14 +78,14 @@ namespace SignalR.Sample.App.Pages
                 .SetMinimumLevel(LogLevel.Trace)
             );
 
-            factory.WithUrlBlazor("/chathub", _jsRuntime, options: opt =>
+            factory.WithUrlBlazor("/chathub", JsRuntime, NavigationManager, options: opt =>
             {
                 //opt.Transports = HttpTransportType.WebSockets;
                 //opt.SkipNegotiation = true;
                 opt.AccessTokenProvider = async () =>
                 {
                     var token = await GetJwtToken("DemoUser");
-                    _logger.LogInformation($"Access Token: {token}");
+                    Logger.LogInformation($"Access Token: {token}");
                     return token;
                 };
             });
@@ -93,7 +96,7 @@ namespace SignalR.Sample.App.Pages
 
             _connection.Closed += exception =>
             {
-                _logger.LogError(exception, "Connection was closed!");
+                Logger.LogError(exception, "Connection was closed!");
                 return Task.CompletedTask;
             };
             await _connection.StartAsync();
@@ -106,8 +109,8 @@ namespace SignalR.Sample.App.Pages
 
         public void DemoMethodObject(DemoData data)
         {
-            _logger.LogInformation("Got object!");
-            _logger.LogInformation(data?.GetType().FullName ?? "<NULL>");
+            Logger.LogInformation("Got object!");
+            Logger.LogInformation(data?.GetType().FullName ?? "<NULL>");
             _objectHandle.Dispose();
             if (data == null) return;
             Handle(data);
@@ -115,8 +118,8 @@ namespace SignalR.Sample.App.Pages
 
         public void DemoMethodList(DemoData[] data)
         {
-            _logger.LogInformation("Got List!");
-            _logger.LogInformation(data?.GetType().FullName ?? "<NULL>");
+            Logger.LogInformation("Got List!");
+            Logger.LogInformation(data?.GetType().FullName ?? "<NULL>");
             _listHandle.Dispose();
             if (data == null) return;
             Handle(data);
@@ -124,14 +127,14 @@ namespace SignalR.Sample.App.Pages
 
         private async Task<string> GetJwtToken(string userId)
         {
-            var httpResponse = await _http.GetAsync($"{ GetBaseAddress()}generatetoken?user={userId}");
+            var httpResponse = await Http.GetAsync($"{ GetBaseAddress()}generatetoken?user={userId}");
             httpResponse.EnsureSuccessStatusCode();
             return await httpResponse.Content.ReadAsStringAsync();
         }
 
         private string GetBaseAddress()
         {
-            var baseAddress = _http.BaseAddress.ToString();
+            var baseAddress = Http.BaseAddress.ToString();
 
             if (!baseAddress.EndsWith("/"))
             {
@@ -143,49 +146,49 @@ namespace SignalR.Sample.App.Pages
 
         private void Handle(object msg)
         {
-            _logger.LogInformation(msg.ToString());
-            _messages.Add(msg.ToString());
+            Logger.LogInformation(msg.ToString());
+            Messages.Add(msg.ToString());
             StateHasChanged();
         }
 
         internal async Task Broadcast()
         {
-            await _connection.InvokeAsync("Send", _toEverybody);
+            await _connection.InvokeAsync("Send", ToEverybody);
         }
 
         internal async Task SendToOthers()
         {
-            await _connection.InvokeAsync("SendToOthers", _toEverybody);
+            await _connection.InvokeAsync("SendToOthers", ToEverybody);
         }
 
         internal async Task SendToConnection()
         {
-            await _connection.InvokeAsync("SendToConnection", _connectionId, _toConnection);
+            await _connection.InvokeAsync("SendToConnection", ConnectionId, ToConnection);
         }
 
         internal async Task SendToMe()
         {
-            await _connection.InvokeAsync("Echo", _toMe);
+            await _connection.InvokeAsync("Echo", ToMe);
         }
 
         internal async Task SendToGroup()
         {
-            await _connection.InvokeAsync("SendToGroup", _groupName, _toGroup);
+            await _connection.InvokeAsync("SendToGroup", GroupName, ToGroup);
         }
 
         internal async Task SendToOthersInGroup()
         {
-            await _connection.InvokeAsync("SendToOthersInGroup", _groupName, _toGroup);
+            await _connection.InvokeAsync("SendToOthersInGroup", GroupName, ToGroup);
         }
 
         internal async Task JoinGroup()
         {
-            await _connection.InvokeAsync("JoinGroup", _groupName);
+            await _connection.InvokeAsync("JoinGroup", GroupName);
         }
 
         internal async Task LeaveGroup()
         {
-            await _connection.InvokeAsync("LeaveGroup", _groupName);
+            await _connection.InvokeAsync("LeaveGroup", GroupName);
         }
 
         internal async Task TellHubToDoStuff()

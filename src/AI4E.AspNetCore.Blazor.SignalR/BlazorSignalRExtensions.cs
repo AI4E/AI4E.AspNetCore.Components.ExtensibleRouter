@@ -40,6 +40,7 @@
 using System;
 using System.Net;
 using AI4E.AspNetCore.Blazor.SignalR;
+using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Connections;
 using Microsoft.AspNetCore.Http.Connections;
 using Microsoft.AspNetCore.SignalR.Protocol;
@@ -51,14 +52,24 @@ namespace Microsoft.AspNetCore.SignalR.Client
 {
     public static class BlazorSignalRExtensions
     {
-        public static IHubConnectionBuilder WithUrlBlazor(this IHubConnectionBuilder hubConnectionBuilder, string url, IJSRuntime jsRuntime,
-            HttpTransportType? transports = null, Action<BlazorHttpConnectionOptions> options = null)
+        public static IHubConnectionBuilder WithUrlBlazor(
+            this IHubConnectionBuilder hubConnectionBuilder,
+            string url,
+            IJSRuntime jsRuntime,
+            NavigationManager navigationManager,
+            HttpTransportType? transports = null,
+            Action<BlazorHttpConnectionOptions> options = null)
         {
-            return WithUrlBlazor(hubConnectionBuilder, new Uri(url), jsRuntime, transports, options);
+            return WithUrlBlazor(hubConnectionBuilder, new Uri(url), jsRuntime, navigationManager, transports, options);
         }
 
-        public static IHubConnectionBuilder WithUrlBlazor(this IHubConnectionBuilder hubConnectionBuilder, Uri url, IJSRuntime jsRuntime,
-            HttpTransportType? transports = null, Action<BlazorHttpConnectionOptions> options = null)
+        public static IHubConnectionBuilder WithUrlBlazor(
+            this IHubConnectionBuilder hubConnectionBuilder,
+            Uri url,
+            IJSRuntime jsRuntime,
+            NavigationManager navigationManager,
+            HttpTransportType? transports = null,
+            Action<BlazorHttpConnectionOptions> options = null)
         {
             if (hubConnectionBuilder == null)
                 throw new ArgumentNullException(nameof(hubConnectionBuilder));
@@ -66,21 +77,30 @@ namespace Microsoft.AspNetCore.SignalR.Client
             if (jsRuntime == null)
                 throw new ArgumentNullException(nameof(jsRuntime));
 
+            if (navigationManager is null)
+                throw new ArgumentNullException(nameof(navigationManager));
+
             hubConnectionBuilder.Services.Configure<BlazorHttpConnectionOptions>(o =>
             {
                 o.Url = url;
+
                 if (!transports.HasValue)
                     return;
+
                 o.Transports = transports.Value;
             });
+
             if (options != null)
                 hubConnectionBuilder.Services.Configure(options);
 
             hubConnectionBuilder.Services.AddSingleton<EndPoint, BlazorHttpConnectionOptionsDerivedHttpEndPoint>();
 
-            hubConnectionBuilder.Services.AddSingleton<IConfigureOptions<BlazorHttpConnectionOptions>, BlazorHubProtocolDerivedHttpOptionsConfigurer>();
+            hubConnectionBuilder.Services.AddSingleton<
+                IConfigureOptions<BlazorHttpConnectionOptions>, BlazorHubProtocolDerivedHttpOptionsConfigurer>();
 
-            hubConnectionBuilder.Services.AddSingleton(provider => BuildBlazorHttpConnectionFactory(provider, jsRuntime));
+            hubConnectionBuilder.Services.AddSingleton(
+                provider => BuildBlazorHttpConnectionFactory(provider, jsRuntime, navigationManager));
+
             return hubConnectionBuilder;
         }
 
@@ -91,13 +111,14 @@ namespace Microsoft.AspNetCore.SignalR.Client
             { }
         }
 
-        private class BlazorHubProtocolDerivedHttpOptionsConfigurer : IConfigureNamedOptions<BlazorHttpConnectionOptions>
+        private class BlazorHubProtocolDerivedHttpOptionsConfigurer
+            : IConfigureNamedOptions<BlazorHttpConnectionOptions>
         {
             private readonly TransferFormat _defaultTransferFormat;
 
             public BlazorHubProtocolDerivedHttpOptionsConfigurer(IHubProtocol hubProtocol)
             {
-                 _defaultTransferFormat = hubProtocol.TransferFormat;
+                _defaultTransferFormat = hubProtocol.TransferFormat;
             }
 
             public void Configure(string name, BlazorHttpConnectionOptions options)
@@ -111,11 +132,15 @@ namespace Microsoft.AspNetCore.SignalR.Client
             }
         }
 
-        private static IConnectionFactory BuildBlazorHttpConnectionFactory(IServiceProvider provider, IJSRuntime jsRuntime)
+        private static IConnectionFactory BuildBlazorHttpConnectionFactory(
+            IServiceProvider provider,
+            IJSRuntime jsRuntime,
+            NavigationManager navigationManager)
         {
             return ActivatorUtilities.CreateInstance<BlazorHttpConnectionFactory>(
                 provider,
-                jsRuntime);
+                jsRuntime,
+                navigationManager);
         }
     }
 }

@@ -102,21 +102,17 @@ namespace AI4E.AspNetCore.Blazor.SignalR
             _transport = pair.Transport;
             _application = pair.Application;
 
-            var inputCts = new CancellationTokenSource();
-            _application.Input.OnWriterCompleted((exception, state) => ((CancellationTokenSource)state).Cancel(),
-                inputCts);
-
             // Start streams
-            Running = ProcessAsync(url, inputCts.Token);
+            Running = ProcessAsync(url);
 
             return Task.CompletedTask;
         }
 
-        private async Task ProcessAsync(Uri url, CancellationToken inputCancellationToken)
+        private async Task ProcessAsync(Uri url)
         {
             // Start sending and receiving
             var receiving = ProcessEventStream(url.ToString(), _application, _transportCts.Token);
-            var sending = SendUtils.SendMessages(url, _application, _httpClient, _logger, inputCancellationToken);
+            var sending = SendUtils.SendMessages(url, _application, _httpClient, _logger, cancellationToken: default);
 
             // Wait for send or receive to complete
             var trigger = await Task.WhenAny(receiving, sending);
@@ -154,7 +150,7 @@ namespace AI4E.AspNetCore.Blazor.SignalR
 
                 // Create connection
                 await _jsRuntime.InvokeAsync<object>(
-                    "BlazorSignalR.ServerSentEventsTransport.CreateConnection", url, DotNetObjectRef.Create(this));
+                    "BlazorSignalR.ServerSentEventsTransport.CreateConnection", url, DotNetObjectReference.Create(this));
 
                 // If canceled, stop fake processing
                 transportCtsToken.Register(() => { task.SetCanceled(); });
@@ -257,7 +253,7 @@ namespace AI4E.AspNetCore.Blazor.SignalR
             try
             {
                 await _jsRuntime.InvokeAsync<object>(
-                    "BlazorSignalR.ServerSentEventsTransport.CloseConnection", DotNetObjectRef.Create(this));
+                    "BlazorSignalR.ServerSentEventsTransport.CloseConnection", DotNetObjectReference.Create(this));
             }
             catch (Exception e)
             {
@@ -265,7 +261,7 @@ namespace AI4E.AspNetCore.Blazor.SignalR
             }
         }
 
-        public static Task<bool> IsSupportedAsync(IJSRuntime jsRuntime)
+        public static ValueTask<bool> IsSupportedAsync(IJSRuntime jsRuntime)
         {
             if (jsRuntime == null)
                 throw new ArgumentNullException(nameof(jsRuntime));

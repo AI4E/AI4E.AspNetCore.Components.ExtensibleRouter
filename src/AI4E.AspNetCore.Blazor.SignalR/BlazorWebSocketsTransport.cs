@@ -104,7 +104,7 @@ namespace AI4E.AspNetCore.Blazor.SignalR
             _startTask = new TaskCompletionSource<object>();
             await _jsRuntime.InvokeAsync<object>(
                 "BlazorSignalR.WebSocketsTransport.CreateConnection", url.ToString(),
-                transferFormat == TransferFormat.Binary, DotNetObjectRef.Create(this));
+                transferFormat == TransferFormat.Binary, DotNetObjectReference.Create(this));
 
             await _startTask.Task;
             _startTask = null;
@@ -259,7 +259,7 @@ namespace AI4E.AspNetCore.Blazor.SignalR
                                 Log.SendStarted(_logger);
 
                                 await _jsRuntime.InvokeAsync<object>(
-                                    "BlazorSignalR.WebSocketsTransport.Send", data, DotNetObjectRef.Create(this));
+                                    "BlazorSignalR.WebSocketsTransport.Send", data, DotNetObjectReference.Create(this));
                             }
                             catch (Exception ex)
                             {
@@ -338,7 +338,7 @@ namespace AI4E.AspNetCore.Blazor.SignalR
             try
             {
                 await _jsRuntime.InvokeAsync<object>(
-                    "BlazorSignalR.WebSocketsTransport.CloseConnection", DotNetObjectRef.Create(this));
+                    "BlazorSignalR.WebSocketsTransport.CloseConnection", DotNetObjectReference.Create(this));
             }
             catch (Exception e)
             {
@@ -369,7 +369,7 @@ namespace AI4E.AspNetCore.Blazor.SignalR
             _receiveTask?.SetCanceled();
         }
 
-        public static Task<bool> IsSupportedAsync(IJSRuntime jsRuntime)
+        public static ValueTask<bool> IsSupportedAsync(IJSRuntime jsRuntime)
         {
             if (jsRuntime == null)
                 throw new ArgumentNullException(nameof(jsRuntime));

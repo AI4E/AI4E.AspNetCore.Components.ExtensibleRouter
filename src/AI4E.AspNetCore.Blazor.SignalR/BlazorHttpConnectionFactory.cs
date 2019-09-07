@@ -41,6 +41,7 @@ using System;
 using System.Net;
 using System.Threading;
 using System.Threading.Tasks;
+using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Connections;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
@@ -52,19 +53,30 @@ namespace AI4E.AspNetCore.Blazor.SignalR
     {
         private readonly BlazorHttpConnectionOptions _options;
         private readonly IJSRuntime _jsRuntime;
+        private readonly NavigationManager _navigationManager;
         private readonly ILoggerFactory _loggerFactory;
 
-        public BlazorHttpConnectionFactory(IOptions<BlazorHttpConnectionOptions> options, IJSRuntime jsRuntime, ILoggerFactory loggerFactory)
+        public BlazorHttpConnectionFactory(
+            IOptions<BlazorHttpConnectionOptions> options,
+            IJSRuntime jsRuntime,
+            NavigationManager navigationManager,
+            ILoggerFactory loggerFactory)
         {
-            if (jsRuntime == null)
+            if (jsRuntime is null)
                 throw new ArgumentNullException(nameof(jsRuntime));
+
+            if (navigationManager is null)
+                throw new ArgumentNullException(nameof(navigationManager));
 
             _options = options.Value;
             _jsRuntime = jsRuntime;
+            _navigationManager = navigationManager;
             _loggerFactory = loggerFactory;
         }
 
-        public async ValueTask<ConnectionContext> ConnectAsync(EndPoint endPoint, CancellationToken cancellationToken = default)
+        public async ValueTask<ConnectionContext> ConnectAsync(
+            EndPoint endPoint,
+            CancellationToken cancellationToken = default)
         {
             if (endPoint == null)
             {
@@ -73,19 +85,23 @@ namespace AI4E.AspNetCore.Blazor.SignalR
 
             if (!(endPoint is UriEndPoint uriEndPoint))
             {
-                throw new NotSupportedException($"The provided {nameof(EndPoint)} must be of type {nameof(UriEndPoint)}.");
+                throw new NotSupportedException(
+                    $"The provided {nameof(EndPoint)} must be of type {nameof(UriEndPoint)}.");
             }
 
             if (_options.Url != null && _options.Url != uriEndPoint.Uri)
             {
-                throw new InvalidOperationException($"If {nameof(BlazorHttpConnectionOptions)}.{nameof(BlazorHttpConnectionOptions.Url)} was set, it must match the {nameof(UriEndPoint)}.{nameof(UriEndPoint.Uri)} passed to {nameof(ConnectAsync)}.");
+                throw new InvalidOperationException(
+                    $"If {nameof(BlazorHttpConnectionOptions)}.{nameof(BlazorHttpConnectionOptions.Url)} was set, it " +
+                    $"must match the {nameof(UriEndPoint)}.{nameof(UriEndPoint.Uri)} passed to {nameof(ConnectAsync)}.");
             }
 
             var shallowCopiedOptions = ShallowCopyHttpConnectionOptions(_options);
             shallowCopiedOptions.Url = uriEndPoint.Uri;
 
-            var connection = new BlazorHttpConnection(shallowCopiedOptions, _jsRuntime, _loggerFactory);
-            
+            var connection = new BlazorHttpConnection(
+                shallowCopiedOptions, _jsRuntime, _navigationManager, _loggerFactory);
+
             try
             {
                 await connection.StartAsync();
@@ -99,7 +115,8 @@ namespace AI4E.AspNetCore.Blazor.SignalR
         }
 
         // Internal for testing
-        internal static BlazorHttpConnectionOptions ShallowCopyHttpConnectionOptions(BlazorHttpConnectionOptions options)
+        internal static BlazorHttpConnectionOptions ShallowCopyHttpConnectionOptions(
+            BlazorHttpConnectionOptions options)
         {
             return new BlazorHttpConnectionOptions
             {

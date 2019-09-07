@@ -45,7 +45,7 @@ using System.Net.Http;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Blazor.Http;
-using Microsoft.AspNetCore.Blazor.Services;
+using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Connections;
 using Microsoft.AspNetCore.Connections.Features;
 using Microsoft.AspNetCore.Http.Connections;
@@ -59,9 +59,46 @@ namespace AI4E.AspNetCore.Blazor.SignalR
 {
     internal class BlazorHttpConnection : ConnectionContext, IConnectionInherentKeepAliveFeature
     {
-        private static readonly int _maxRedirects = 100;
+        private static readonly int MaxRedirects = 100;
         private static readonly Task<string> NoAccessToken = Task.FromResult<string>(null);
         private static readonly TimeSpan HttpClientTimeout = TimeSpan.FromSeconds(120.0);
+
+        private readonly BlazorHttpConnectionOptions _options;
+        private readonly IJSRuntime _jsRuntime;
+        private readonly NavigationManager _navigationManager;
+        private readonly ILoggerFactory _loggerFactory;
+        private readonly ILogger<BlazorHttpConnection> _logger;
+        private readonly HttpClient _httpClient;
+
+        private readonly SemaphoreSlim _connectionLock = new SemaphoreSlim(1, 1);
+
+        private string _connectionId;
+        private IDuplexPipe _transport;
+        private bool _disposed;
+        private bool _started;
+        private bool _hasInherentKeepAlive;
+        private Func<Task<string>> _accessTokenProvider;
+
+        public BlazorHttpConnection(
+            BlazorHttpConnectionOptions options,
+            IJSRuntime jsRuntime,
+            NavigationManager navigationManager,
+            ILoggerFactory loggerFactory)
+        {
+            if (jsRuntime == null)
+                throw new ArgumentNullException(nameof(jsRuntime));
+
+            if (navigationManager is null)
+                throw new ArgumentNullException(nameof(navigationManager));
+
+            _options = options;
+            _jsRuntime = jsRuntime;
+            _navigationManager = navigationManager;
+            _loggerFactory = loggerFactory ?? NullLoggerFactory.Instance;
+            _logger = _loggerFactory.CreateLogger<BlazorHttpConnection>();
+            _httpClient = CreateHttpClient();
+            Features.Set<IConnectionInherentKeepAliveFeature>(this);
+        }
 
         public override string ConnectionId
         {
@@ -91,34 +128,6 @@ namespace AI4E.AspNetCore.Blazor.SignalR
         }
 
         bool IConnectionInherentKeepAliveFeature.HasInherentKeepAlive => _hasInherentKeepAlive;
-
-        private readonly BlazorHttpConnectionOptions _options;
-        private readonly IJSRuntime _jsRuntime;
-        private readonly ILoggerFactory _loggerFactory;
-        private readonly ILogger<BlazorHttpConnection> _logger;
-        private readonly HttpClient _httpClient;
-
-        private readonly SemaphoreSlim _connectionLock = new SemaphoreSlim(1, 1);
-
-        private string _connectionId;
-        private IDuplexPipe _transport;
-        private bool _disposed;
-        private bool _started;
-        private bool _hasInherentKeepAlive;
-        private Func<Task<string>> _accessTokenProvider;
-
-        public BlazorHttpConnection(BlazorHttpConnectionOptions options, IJSRuntime jsRuntime, ILoggerFactory loggerFactory)
-        {
-            if (jsRuntime == null)
-                throw new ArgumentNullException(nameof(jsRuntime));
-
-            _options = options;
-            _jsRuntime = jsRuntime;
-            _loggerFactory = loggerFactory ?? NullLoggerFactory.Instance;
-            _logger = _loggerFactory.CreateLogger<BlazorHttpConnection>();
-            _httpClient = CreateHttpClient();
-            Features.Set<IConnectionInherentKeepAliveFeature>(this);
-        }
 
         public Task StartAsync()
         {
@@ -165,7 +174,7 @@ namespace AI4E.AspNetCore.Blazor.SignalR
             // Fix relative url paths
             if (!uri.IsAbsoluteUri || uri.Scheme == Uri.UriSchemeFile && uri.OriginalString.StartsWith("/", StringComparison.Ordinal))
             {
-                var baseUrl = new Uri(WebAssemblyUriHelper.Instance.GetBaseUri());
+                var baseUrl = new Uri(_navigationManager.BaseUri);
                 uri = new Uri(baseUrl, uri);
             }
 
@@ -195,9 +204,9 @@ namespace AI4E.AspNetCore.Blazor.SignalR
 
                     ++redirects;
                 }
-                while (negotiationResponse.Url != null && redirects < _maxRedirects);
+                while (negotiationResponse.Url != null && redirects < MaxRedirects);
 
-                if (redirects == _maxRedirects && negotiationResponse.Url != null)
+                if (redirects == MaxRedirects && negotiationResponse.Url != null)
                 {
                     throw new InvalidOperationException("Negotiate redirection limit exceeded.");
                 }
@@ -394,7 +403,9 @@ namespace AI4E.AspNetCore.Blazor.SignalR
 
         private HttpClient CreateHttpClient()
         {
+#pragma warning disable IDE0068
             HttpMessageHandler handler = new WebAssemblyHttpMessageHandler();
+#pragma warning restore IDE0068
 
             if (_options.HttpMessageHandlerFactory != null)
             {
@@ -408,7 +419,7 @@ namespace AI4E.AspNetCore.Blazor.SignalR
 
             var httpClient = new HttpClient(new LoggingHttpMessageHandler(handler, _loggerFactory))
             {
-                BaseAddress = new Uri(WebAssemblyUriHelper.Instance.GetBaseUri()),
+                BaseAddress = new Uri(_navigationManager.BaseUri),
                 Timeout = HttpClientTimeout
             };
             //            httpClient.DefaultRequestHeaders.UserAgent.Add(Constants.UserAgentHeader);
