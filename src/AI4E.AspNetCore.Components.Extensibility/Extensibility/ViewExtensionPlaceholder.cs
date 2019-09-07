@@ -34,7 +34,7 @@ using System.Linq;
 using System.Reflection;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Components;
-using Microsoft.AspNetCore.Components.RenderTree;
+using Microsoft.AspNetCore.Components.Rendering;
 
 namespace AI4E.AspNetCore.Components.Extensibility
 {
@@ -49,14 +49,14 @@ namespace AI4E.AspNetCore.Components.Extensibility
 
         private RenderHandle _renderHandle;
         private bool _isInit;
-        private ParameterCollection _parameters;
+        private ParameterView _parameters;
         private HashSet<Type> _viewExtensions;
 
         [Inject] private IAssemblySource AssemblySource { get; set; }
-        [Parameter] private object Context { get; set; }
+        [Parameter] public object Context { get; set; }
 
         /// <inheritdoc />
-        public void Configure(RenderHandle renderHandle)
+        public void Attach(RenderHandle renderHandle)
         {
             if (_renderHandle.IsInitialized)
             {
@@ -67,7 +67,7 @@ namespace AI4E.AspNetCore.Components.Extensibility
         }
 
         /// <inheritdoc />
-        public Task SetParametersAsync(ParameterCollection parameters)
+        public Task SetParametersAsync(ParameterView parameters)
         {
             _parameters = parameters;
             Context = _parameters.GetValueOrDefault<object>(ContextName);
