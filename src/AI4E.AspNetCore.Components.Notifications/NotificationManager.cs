@@ -139,7 +139,7 @@ namespace AI4E.AspNetCore.Components.Notifications
 
         private void PlaceNotification(LinkedListNode<NotificationMessage> node)
         {
-            Debug.Assert(node != null);
+            //Debug.Assert(node != null);
 
             if (node.Value.Expiration == null)
             {

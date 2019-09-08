@@ -1,4 +1,4 @@
-/* License
+﻿/* License
  * --------------------------------------------------------------------------------------------------------------------
  * This file is part of the AI4E distribution.
  *   (https://github.com/AI4E/AI4E.AspNetCore.Components.Extensions)
@@ -27,20 +27,21 @@
  * --------------------------------------------------------------------------------------------------------------------
  */
 
-using AI4E.AspNetCore.Components.Notifications;
-using Microsoft.Extensions.DependencyInjection.Extensions;
+// TODO: This is a copy from the AI4E project. Remove this.
 
-namespace Microsoft.Extensions.DependencyInjection
+using System;
+
+namespace AI4E.AspNetCore.Components.Notifications
 {
-    public static class NotificationsServiceCollectionExtension
+    /// <summary>
+    /// An injectable provider that can be used to obtain the current time.
+    /// </summary>
+    public sealed class DateTimeProvider : IDateTimeProvider
     {
-        public static IServiceCollection AddNotifications(this IServiceCollection services)
+        /// <inheritdoc/>
+        public DateTime GetCurrentTime()
         {
-            services.TryAddSingleton<IDateTimeProvider, DateTimeProvider>();
-            services.AddScoped<NotificationManager>();
-            services.AddScoped<INotificationManager>(p => p.GetRequiredService<NotificationManager>());
-            services.AddScoped<INotificationManager<Notification>>(p => p.GetRequiredService<NotificationManager>());
-            return services;
+            return DateTime.UtcNow;
         }
     }
 }
