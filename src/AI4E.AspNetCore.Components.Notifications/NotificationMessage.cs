@@ -28,42 +28,40 @@
  */
 
 using System;
+using AI4E.Utils;
 
 namespace AI4E.AspNetCore.Components.Notifications
 {
     /// <summary>
     /// Represents a notification message.
     /// </summary>
-    public readonly struct NotificationMessage
+    public sealed class NotificationMessage
     {
         /// <summary>
         /// Creates a new instance of the <see cref="NotificationMessage"/> type.
         /// </summary>
-        /// <param name="notificationType">A value of <see cref="NotificationMessage"/> indicating the type of notification.</param>
-        /// <param name="message">A <see cref="string"/> specifying the notification message.</param>
-        /// <param name="expiration">
-        /// The <see cref="DateTime"/> indicating the notification's expiration or <c>null</c> if the notification has no expiration.
-        /// </param>
-        /// <param name="allowDismiss">A boolean value indicating whether the notification may be dismissed.</param>
-        /// <param name="uriFilter">
-        /// An <see cref="UriFilter"/> that represents an uri filter that specifies on which
-        /// pages the alert shall be displayed.
-        /// </param>
-        /// <param name="key">The notification key or <c>null</c>.</param>
+        /// <param name="notificationType">The type of notification.</param>
+        /// <param name="message">The notification message.</param>
+        /// <exception cref="ArgumentNullException">Thrown if <paramref name="message"/>is <c>null</c>.</exception>
+        /// <exception cref="ArgumentException">
+        /// Thrown if <paramref name="notificationType"/> is an invalid value.
+        /// </exception>
         public NotificationMessage(
             NotificationType notificationType,
-            string message,
-            DateTime? expiration = null,
-            bool allowDismiss = false,
-            UriFilter uriFilter = default,
-            string? key = default)
+            string message)
         {
+            if (message is null)
+                throw new ArgumentNullException(nameof(message));
+
+            if (!notificationType.IsValid())
+            {
+                throw new ArgumentException(
+                    $"The argument must be one of the values defined in {typeof(NotificationType)}",
+                    nameof(notificationType));
+            }
+
             NotificationType = notificationType;
             Message = message;
-            Expiration = expiration;
-            AllowDismiss = allowDismiss;
-            UriFilter = uriFilter;
-            Key = key;
         }
 
         /// <summary>
@@ -77,23 +75,40 @@ namespace AI4E.AspNetCore.Components.Notifications
         public string Message { get; }
 
         /// <summary>
-        /// Gets the date and time of the notification's expiration or <c>null</c> if the notification has no expiration.
+        /// Gets or sets the notification description.
         /// </summary>
-        public DateTime? Expiration { get; }
+        public string? Description { get; set; }
 
         /// <summary>
-        /// Gets a boolean value indicating whether the notification may be dismissed.
+        /// Gets or sets the uri of the notification target.
         /// </summary>
-        public bool AllowDismiss { get; }
+        public string? TargetUri { get; set; }
 
         /// <summary>
-        /// Gets an url filter that specifies on which pages the alert shall be displayed or <c>null</c> if it shall be displayed on all pages.
+        /// Gets or sets the date and time of the notification's expiration
+        /// or <c>null</c> if the notification has no expiration.
         /// </summary>
-        public UriFilter UriFilter { get; }
+        public DateTime? Expiration { get; set; }
 
         /// <summary>
-        /// Gets the notification key.
+        /// Gets or sets a boolean value indicating whether the notification may be dismissed.
         /// </summary>
-        public string? Key { get; }
+        public bool AllowDismiss { get; set; }
+
+        /// <summary>
+        /// Gets or sets an url filter that specifies on which pages the alert shall be displayed
+        /// or <c>null</c> if it shall be displayed on all pages.
+        /// </summary>
+        public UriFilter UriFilter { get; set; }
+
+        /// <summary>
+        /// Gets or sets the notification key.
+        /// </summary>
+        public string? Key { get; set; }
+
+        /// <summary>
+        /// Gets or sets the timestamp of the notification.
+        /// </summary>
+        public DateTime? Timestamp { get; set; }
     }
 }

@@ -30,7 +30,6 @@
 using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
-using System.Diagnostics;
 using System.Threading.Tasks;
 using AI4E.Utils;
 
@@ -39,7 +38,7 @@ namespace AI4E.AspNetCore.Components.Notifications
     public sealed class NotificationManager : INotificationManager<Notification>
     {
         private readonly IDateTimeProvider _dateTimeProvider;
-        private readonly LinkedList<NotificationMessage> _notificationMessages = new LinkedList<NotificationMessage>();
+        private readonly LinkedList<ManagedNotificationMessage> _notificationMessages = new LinkedList<ManagedNotificationMessage>();
         private readonly object _mutex = new object();
         private bool _isDisposed = false;
 
@@ -113,7 +112,7 @@ namespace AI4E.AspNetCore.Components.Notifications
 
                 if (_notificationMessages.Count == 1)
                 {
-                    return ImmutableList.Create(new Notification(this, _notificationMessages.First!));
+                    return ImmutableList.Create(new Notification(_notificationMessages.First!));
                 }
 
                 var builder = ImmutableList.CreateBuilder<Notification>();
@@ -130,14 +129,14 @@ namespace AI4E.AspNetCore.Components.Notifications
                         continue;
                     }
 
-                    builder.Add(new Notification(this, current));
+                    builder.Add(new Notification(current));
                 }
 
                 return builder.ToImmutable();
             }
         }
 
-        private void PlaceNotification(LinkedListNode<NotificationMessage> node)
+        private void PlaceNotification(LinkedListNode<ManagedNotificationMessage> node)
         {
             //Debug.Assert(node != null);
 
@@ -189,7 +188,7 @@ namespace AI4E.AspNetCore.Components.Notifications
         }
 
         /// <inheritdoc />
-        public NotificationPlacement PlaceNotification(in NotificationMessage notificationMessage)
+        public NotificationPlacement PlaceNotification(NotificationMessage notificationMessage)
         {
             if (!notificationMessage.NotificationType.IsValid())
             {
@@ -201,7 +200,8 @@ namespace AI4E.AspNetCore.Components.Notifications
                 return default;
             }
 
-            var node = new LinkedListNode<NotificationMessage>(notificationMessage);
+            var managedMessage = new ManagedNotificationMessage(notificationMessage, this, _dateTimeProvider);
+            var node = new LinkedListNode<ManagedNotificationMessage>(managedMessage);
             PlaceNotification(node);
             return new NotificationPlacement(this, node);
         }
@@ -212,7 +212,7 @@ namespace AI4E.AspNetCore.Components.Notifications
             if (!ReferenceEquals(notificationPlacement.NotificationManager, this))
                 return;
 
-            if (notificationPlacement.NotificationRef is LinkedListNode<NotificationMessage> node)
+            if (notificationPlacement.NotificationRef is LinkedListNode<ManagedNotificationMessage> node)
             {
                 lock (_mutex)
                 {

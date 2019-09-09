@@ -8,9 +8,25 @@
 
     protected override void OnInitialized()
     {
-        NotificationManager.PlaceNotification(new NotificationMessage(NotificationType.None, "This notification should never be displayed.", allowDismiss: true));
-        NotificationManager.PlaceNotification(new NotificationMessage(NotificationType.Info, "This is an informational notification.", allowDismiss: true));
-        NotificationManager.PlaceNotification(new NotificationMessage(NotificationType.Success, "This notification informs about a success.", allowDismiss: true));
+        NotificationManager.PlaceNotification(
+            new NotificationMessage(NotificationType.None, "This notification should never be displayed.")
+            {
+                AllowDismiss = true
+            });
+
+        NotificationManager.PlaceNotification(
+            new NotificationMessage(NotificationType.Info, "This is an informational notification.")
+            {
+                AllowDismiss = true,
+                TargetUri = "/counter"
+            });
+
+        NotificationManager.PlaceNotification(
+            new NotificationMessage(NotificationType.Success, "This notification informs about a success.")
+            {
+                AllowDismiss = true
+            });
+
         NotificationManager.PlaceNotification(new NotificationMessage(NotificationType.Warning, "This notification indicates a warning."));
         NotificationManager.PlaceNotification(new NotificationMessage(NotificationType.Danger, "The application is in a dangerous state."));
 
@@ -61,7 +77,8 @@
         @for (var i = 0; i < Notifications.Count; i++)
         {
             var notification = Notifications[i];
-            <li class="notification">
+
+            <li class="notification" clickable="@(notification.TargetUri != null)">
                 <div class="media">
                     <div class="mr-2" style="width:50px; height:50px; display: flex; align-items:center; justify-content:center">
                         @if (notification.NotificationType == NotificationType.Info)
@@ -83,27 +100,30 @@
                     </div>
 
                     <div class="media-body">
-                        <strong class="notification-title">@FormatNotificationTitle(notification)</strong>
-
-                        <p class="notification-desc">Resolution: Fixed, Work log: 4h</p>
+                        <a href="@notification.TargetUri">
+                            <strong class="notification-title">@FormatNotificationTitle(notification)</strong>
+                        </a>
+                        @if (!string.IsNullOrWhiteSpace(notification.Description))
+                        {
+                            <p class="notification-desc">@notification.Description</p>
+                        }
 
                         <div class="notification-meta">
-                            <small class="timestamp">27. 10. 2015, 08:00</small>
+                            <small class="timestamp">@notification.Timestamp</small>
                         </div>
                     </div>
 
                     @if (notification.AllowDismiss)
                     {
-                        <button class="btn btn-outline-primary" @onclick="notification.Dismiss">
+                        <span class="btn btn-outline-primary" @onclick="notification.Dismiss">
                             <span class="oi oi-x" aria-hidden="true"></span>
                             <span class="none-sm">
                                 Dismiss
                             </span>
-                        </button>
+                        </span>
                     }
-
-
                 </div>
+
             </li>
         }
     </ul>

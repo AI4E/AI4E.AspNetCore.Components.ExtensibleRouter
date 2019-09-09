@@ -1,4 +1,4 @@
-/* License
+﻿/* License
  * --------------------------------------------------------------------------------------------------------------------
  * This file is part of the AI4E distribution.
  *   (https://github.com/AI4E/AI4E.AspNetCore.Components.Extensions)
@@ -31,22 +31,49 @@ using System;
 
 namespace AI4E.AspNetCore.Components.Notifications
 {
-    public interface INotification
+    /// <summary>
+    /// Represents a notification message under the control of a notification manager.
+    /// </summary>
+    internal sealed class ManagedNotificationMessage
     {
-        /// <summary>
-        /// Gets a boolean value indicating whether the notification is expired.
-        /// </summary>
-        bool IsExpired { get; }
+        public ManagedNotificationMessage(
+            NotificationMessage notificationMessage,
+            NotificationManager notificationManager,
+            IDateTimeProvider dateTimeProvider)
+        {
+            if (notificationMessage is null)
+                throw new ArgumentNullException(nameof(notificationMessage));
+
+            if (notificationManager is null)
+                throw new ArgumentNullException(nameof(notificationManager));
+
+            if (dateTimeProvider is null)
+                throw new ArgumentNullException(nameof(dateTimeProvider));
+
+            NotificationManager = notificationManager!;
+
+            NotificationType = notificationMessage.NotificationType;
+            Message = notificationMessage.Message;
+            Description = notificationMessage.Description;
+            TargetUri = notificationMessage.TargetUri;
+            Expiration = notificationMessage.Expiration;
+            AllowDismiss = notificationMessage.AllowDismiss;
+            UriFilter = notificationMessage.UriFilter;
+            Key = notificationMessage.Key;
+            Timestamp = notificationMessage.Timestamp ?? dateTimeProvider.GetCurrentTime();
+        }
+
+        public NotificationManager NotificationManager { get; }
 
         /// <summary>
         /// Gets the type of notification.
         /// </summary>
-        NotificationType NotificationType { get; }
+        public NotificationType NotificationType { get; }
 
         /// <summary>
         /// Gets the notification message.
         /// </summary>
-        string Message { get; }
+        public string Message { get; }
 
         /// <summary>
         /// Gets the notification description.
@@ -59,9 +86,21 @@ namespace AI4E.AspNetCore.Components.Notifications
         public string? TargetUri { get; }
 
         /// <summary>
+        /// Gets the date and time of the notification's expiration
+        /// or <c>null</c> if the notification has no expiration.
+        /// </summary>
+        public DateTime? Expiration { get; }
+
+        /// <summary>
         /// Gets a boolean value indicating whether the notification may be dismissed.
         /// </summary>
-        bool AllowDismiss { get; }
+        public bool AllowDismiss { get; }
+
+        /// <summary>
+        /// Gets an url filter that specifies on which pages the alert shall be displayed
+        /// or <c>null</c> if it shall be displayed on all pages.
+        /// </summary>
+        public UriFilter UriFilter { get; }
 
         /// <summary>
         /// Gets the notification key.
@@ -72,10 +111,5 @@ namespace AI4E.AspNetCore.Components.Notifications
         /// Gets the timestamp of the notification.
         /// </summary>
         public DateTime Timestamp { get; }
-
-        /// <summary>
-        /// Dismisses the notification.
-        /// </summary>
-        void Dismiss();
     }
 }

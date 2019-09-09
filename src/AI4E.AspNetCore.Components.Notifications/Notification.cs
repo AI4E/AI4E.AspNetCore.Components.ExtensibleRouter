@@ -35,34 +35,24 @@ namespace AI4E.AspNetCore.Components.Notifications
 {
     public readonly struct Notification : INotification, IEquatable<Notification>
     {
-        private readonly NotificationManager? _notificationManager;
-
-        internal Notification(
-            NotificationManager notificationManager,
-            LinkedListNode<NotificationMessage> notificationRef)
+        internal Notification(LinkedListNode<ManagedNotificationMessage> notificationRef)
         {
-            Debug.Assert(notificationManager != null);
             Debug.Assert(notificationRef != null);
-
-            _notificationManager = notificationManager;
             NotificationRef = notificationRef;
         }
 
-        internal LinkedListNode<NotificationMessage>? NotificationRef { get; }
+        internal LinkedListNode<ManagedNotificationMessage>? NotificationRef { get; }
 
         /// <summary>
         /// Gets the notification manager that manages the notification
         /// or <c>null</c> if the notification is a default value.
         /// </summary>
-        public INotificationManager<Notification>? NotificationManager => _notificationManager;
+        public INotificationManager<Notification>? NotificationManager =>
+            NotificationRef?.Value.NotificationManager;
 
         /// <inheritdoc />
         public bool Equals(Notification other)
         {
-            // It is not necessary to include the INotificationManager into comparison.
-            // A notification-ref belongs to a single INotificationManager in its complete lifetime,
-            // so it should be suffice to compare the nodes.
-
             return NotificationRef == other.NotificationRef;
         }
 
@@ -75,10 +65,6 @@ namespace AI4E.AspNetCore.Components.Notifications
         /// <inheritdoc />
         public override int GetHashCode()
         {
-            // It is not necessary to include the INotificationManager into comparison.
-            // A notification-ref belongs to a single INotificationManager in its complete lifetime,
-            // so it should be suffice to compare the nodes.
-
             return NotificationRef?.GetHashCode() ?? 0;
         }
 
@@ -103,10 +89,19 @@ namespace AI4E.AspNetCore.Components.Notifications
         public string Message => NotificationRef?.Value.Message ?? string.Empty;
 
         /// <inheritdoc />
+        public string? Description => NotificationRef?.Value.Description;
+
+        /// <inheritdoc />
+        public string? TargetUri => NotificationRef?.Value.TargetUri;
+
+        /// <inheritdoc />
         public bool AllowDismiss => !IsExpired && (NotificationRef?.Value.AllowDismiss ?? false);
 
         /// <inheritdoc />
         public string? Key => NotificationRef?.Value.Key;
+
+        /// <inheritdoc />
+        public DateTime Timestamp => NotificationRef?.Value.Timestamp ?? DateTime.UtcNow; // TODO: Which value can we use as timestamp here?
 
         /// <inheritdoc />
         public void Dismiss()
@@ -116,7 +111,7 @@ namespace AI4E.AspNetCore.Components.Notifications
             if (!AllowDismiss)
                 return;
 
-            _notificationManager?.Dismiss(this);
+            NotificationManager?.Dismiss(this);
         }
     }
 }

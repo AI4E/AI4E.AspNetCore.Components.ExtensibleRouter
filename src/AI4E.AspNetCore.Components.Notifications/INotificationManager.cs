@@ -34,7 +34,7 @@ namespace AI4E.AspNetCore.Components.Notifications
 {
     public interface INotificationManager : IDisposable // TODO: Rename?
     {
-        NotificationPlacement PlaceNotification(in NotificationMessage notificationMessage);
+        NotificationPlacement PlaceNotification(NotificationMessage notificationMessage);
         void CancelNotification(in NotificationPlacement notificationPlacement);
     }
 
