@@ -37,6 +37,9 @@ namespace AI4E.AspNetCore.Components.Notifications
     /// </summary>
     public sealed class NotificationMessage
     {
+        private NotificationType _notificationType;
+        private string _message;
+
         /// <summary>
         /// Creates a new instance of the <see cref="NotificationMessage"/> type.
         /// </summary>
@@ -50,29 +53,36 @@ namespace AI4E.AspNetCore.Components.Notifications
             NotificationType notificationType,
             string message)
         {
-            if (message is null)
-                throw new ArgumentNullException(nameof(message));
+            _notificationType = CheckValidNotificationType(notificationType, nameof(notificationType));
+            _message = CheckValidMessage(message, nameof(message));
+        }
 
-            if (!notificationType.IsValid())
-            {
-                throw new ArgumentException(
-                    $"The argument must be one of the values defined in {typeof(NotificationType)}",
-                    nameof(notificationType));
-            }
-
-            NotificationType = notificationType;
-            Message = message;
+        /// <summary>
+        /// Creates a new instance of the <see cref="NotificationMessage"/> type.
+        /// </summary>
+        public NotificationMessage()
+        {
+            _notificationType = NotificationType.Info;
+            _message = string.Empty;
         }
 
         /// <summary>
         /// Gets the type of notification.
         /// </summary>
-        public NotificationType NotificationType { get; }
+        public NotificationType NotificationType
+        {
+            get => _notificationType;
+            set => _notificationType = CheckValidNotificationType(value, nameof(value));
+        }
 
         /// <summary>
         /// Gets the notification message.
         /// </summary>
-        public string Message { get; }
+        public string Message
+        {
+            get => _message;
+            set => _message = CheckValidMessage(value, nameof(value));
+        }
 
         /// <summary>
         /// Gets or sets the notification description.
@@ -110,5 +120,29 @@ namespace AI4E.AspNetCore.Components.Notifications
         /// Gets or sets the timestamp of the notification.
         /// </summary>
         public DateTime? Timestamp { get; set; }
+
+        private NotificationType CheckValidNotificationType(
+            NotificationType notificationType,
+            string paramName)
+        {
+            if (!notificationType.IsValid())
+            {
+                throw new ArgumentException(
+                    $"The argument must be one of the values defined in {typeof(NotificationType)}",
+                    paramName);
+            }
+
+            return notificationType;
+        }
+
+        private string CheckValidMessage(
+            string message,
+            string paramName)
+        {
+            if (message is null)
+                throw new ArgumentNullException(paramName);
+
+            return message;
+        }
     }
 }

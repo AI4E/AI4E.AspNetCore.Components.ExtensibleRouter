@@ -8,28 +8,6 @@
 
     protected override void OnInitialized()
     {
-        NotificationManager.PlaceNotification(
-            new NotificationMessage(NotificationType.None, "This notification should never be displayed.")
-            {
-                AllowDismiss = true
-            });
-
-        NotificationManager.PlaceNotification(
-            new NotificationMessage(NotificationType.Info, "This is an informational notification.")
-            {
-                AllowDismiss = true,
-                TargetUri = "/counter"
-            });
-
-        NotificationManager.PlaceNotification(
-            new NotificationMessage(NotificationType.Success, "This notification informs about a success.")
-            {
-                AllowDismiss = true
-            });
-
-        NotificationManager.PlaceNotification(new NotificationMessage(NotificationType.Warning, "This notification indicates a warning."));
-        NotificationManager.PlaceNotification(new NotificationMessage(NotificationType.Danger, "The application is in a dangerous state."));
-
         UpdateNotifications();
     }
 
