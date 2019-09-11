@@ -2,6 +2,7 @@
 
   <PropertyGroup>
     <TargetFramework>$(NetStandardVersion)</TargetFramework>
+    <RootNamespace>Routing.ModularRouterSample.Shared</RootNamespace>
   </PropertyGroup>
 
   <ItemGroup>

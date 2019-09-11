@@ -28,7 +28,9 @@
  */
 
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.Collections.Immutable;
 using System.Diagnostics;
 using System.Linq;
 using System.Reflection;
@@ -45,15 +47,32 @@ namespace AI4E.AspNetCore.Components.Extensibility
     public sealed class ViewExtensionPlaceholder<TViewExtension> : IComponent, IDisposable
         where TViewExtension : IViewExtensionDefinition
     {
-        internal const string ContextName = nameof(Context);
+        private readonly RenderFragment _renderFragment;  // Cache to avoid per-render allocations
 
         private RenderHandle _renderHandle;
         private bool _isInit;
-        private ParameterView _parameters;
         private HashSet<Type> _viewExtensions;
 
+        /// <summary>
+        /// Creates a new instance of the <see cref="ViewExtensionPlaceholder{TViewExtension}"/> type.
+        /// </summary>
+        public ViewExtensionPlaceholder()
+        {
+            _renderFragment = Render;
+        }
+
         [Inject] private IAssemblySource AssemblySource { get; set; }
+
+        /// <summary>
+        /// Gets or sets the view-extension context.
+        /// </summary>
         [Parameter] public object Context { get; set; }
+
+        /// <summary>
+        /// Gets or sets a collection of attributes that will be applied to the rendered view-extension.
+        /// </summary>
+        [Parameter(CaptureUnmatchedValues = true)]
+        public IReadOnlyDictionary<string, object> ViewExtensionAttributes { get; set; }
 
         /// <inheritdoc />
         public void Attach(RenderHandle renderHandle)
@@ -69,8 +88,7 @@ namespace AI4E.AspNetCore.Components.Extensibility
         /// <inheritdoc />
         public Task SetParametersAsync(ParameterView parameters)
         {
-            _parameters = parameters;
-            Context = _parameters.GetValueOrDefault<object>(ContextName);
+            parameters.SetParameterProperties(this);
 
             if (!_isInit)
             {
@@ -124,16 +142,38 @@ namespace AI4E.AspNetCore.Components.Extensibility
             return false;
         }
 
-        // TODO: The result for each assembly can be cached.
-        private static IEnumerable<Type> GetViewExtensions(Assembly assembly)
+        private static readonly ConcurrentDictionary<Assembly, ImmutableList<Type>> _viewExtensionsLookup
+            = new ConcurrentDictionary<Assembly, ImmutableList<Type>>();
+
+        private static ImmutableList<Type> GetViewExtensions(Assembly assembly)
         {
-            return assembly.ExportedTypes.Where(t => typeof(TViewExtension).IsAssignableFrom(t) && !t.IsInterface);
+            if (_viewExtensionsLookup.TryGetValue(assembly, out var result))
+            {
+                return result;
+            }
+
+            result = assembly.ExportedTypes.Where(IsViewExtension).ToImmutableList();
+            _viewExtensionsLookup.TryAdd(assembly, result);
+
+            return result;
+        }
+
+        private static bool IsViewExtension(Type type)
+        {
+            if (!typeof(TViewExtension).IsAssignableFrom(type))
+                return false;
+
+            if (type.IsInterface)
+                return false;
+
+            // The view-extension definition itself is not a view-extension we may consider,
+            // otherwise we end up in an infinite loop.
+            return type != typeof(TViewExtension);
         }
 
         private void Render()
         {
-            RenderFragment renderFragment = Render;
-            _renderHandle.Render(renderFragment);
+            _renderHandle.Render(_renderFragment);
         }
 
         private void Render(RenderTreeBuilder builder)
@@ -141,10 +181,8 @@ namespace AI4E.AspNetCore.Components.Extensibility
             Debug.Assert(_viewExtensions != null);
             foreach (var viewExtension in _viewExtensions)
             {
-                builder.OpenComponent(0, viewExtension);
-
+                builder.OpenComponent(sequence: 0, viewExtension);
                 ApplyParameters(builder);
-
                 builder.CloseComponent();
             }
         }
@@ -153,7 +191,12 @@ namespace AI4E.AspNetCore.Components.Extensibility
         {
             if (Context != null)
             {
-                builder.AddAttribute(0, ContextName, Context);
+                builder.AddAttribute(0, nameof(Context), Context);
+            }
+
+            if (ViewExtensionAttributes != null)
+            {
+                builder.AddMultipleAttributes(sequence: 0, ViewExtensionAttributes);
             }
         }
     }

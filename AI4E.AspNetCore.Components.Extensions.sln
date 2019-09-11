@@ -45,7 +45,7 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "SignalR.Sample.Server", "sa
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "SignalR.Sample.App", "samples\SignalR.Sample\SignalR.Sample.App\SignalR.Sample.App.csproj", "{D47CAA82-81D0-4B97-A475-FD46AB3E360C}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AI4E.AspNetCore.Components.Notifications", "src\AI4E.AspNetCore.Components.Notifications\AI4E.AspNetCore.Components.Notifications.csproj", "{A8D466CB-C925-4967-B01B-D3BD9D902436}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "AI4E.AspNetCore.Components.Notifications", "src\AI4E.AspNetCore.Components.Notifications\AI4E.AspNetCore.Components.Notifications.csproj", "{A8D466CB-C925-4967-B01B-D3BD9D902436}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Notifications.Sample2", "Notifications.Sample2", "{90A34CFF-BAFE-4F57-9EB0-8734BF5A3594}"
 EndProject
