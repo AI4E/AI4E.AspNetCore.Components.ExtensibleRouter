@@ -27,24 +27,50 @@
  * --------------------------------------------------------------------------------------------------------------------
  */
 
+using System.Threading.Tasks;
 using Microsoft.AspNetCore.Components;
+using Microsoft.AspNetCore.Components.Rendering;
 
 namespace AI4E.AspNetCore.Components.Extensibility
 {
     /// <summary>
-    /// Marks types to be view extension definition or implementing a view extension defintion.
+    /// A base type for view extensions.
     /// </summary>
-    public interface IViewExtensionDefinition : IComponent { }
+    /// <remarks>
+    /// A view extension can alternatively beeing rendered via
+    /// the <see cref="ViewExtensionPlaceholder{TViewExtension}"/> component.
+    /// </remarks>
+    public abstract class ViewExtensionBase : ComponentBase, IViewExtensionDefinition
+    {
+        private ParameterView _parameters;
+
+        /// <inheritdoc />
+        protected override void BuildRenderTree(RenderTreeBuilder builder)
+        {
+            builder.OpenComponent(sequence: 0, typeof(ViewExtensionPlaceholder<>).MakeGenericType(GetType()));
+            builder.AddMultipleAttributes(sequence: 0, _parameters.ToDictionary());
+            builder.CloseComponent();
+        }
+
+        /// <inheritdoc />
+        public override Task SetParametersAsync(ParameterView parameters)
+        {
+            _parameters = parameters;
+            return base.SetParametersAsync(parameters);
+        }
+    }
 
     /// <summary>
-    /// Marks types to be view extension definition or implementing a view extension defintion.
+    /// A generic base type for view extensions.
     /// </summary>
+    /// <remarks>
+    /// A view extension can alternatively beeing rendered via
+    /// the <see cref="ViewExtensionPlaceholder{TViewExtension}"/> component.
+    /// </remarks>
     /// <typeparam name="TContext">The type of context parameter.</typeparam>
-    public interface IViewExtensionDefinition<TContext> : IViewExtensionDefinition
+    public abstract class ViewExtensionBase<TContext> : ViewExtensionBase, IViewExtensionDefinition<TContext>
     {
-        /// <summary>
-        /// Gets or sets the view-extension context.
-        /// </summary>
-        TContext Context { get; set; }
+        /// <inheritdoc />
+        [Parameter] public TContext Context { get; set; }
     }
 }
