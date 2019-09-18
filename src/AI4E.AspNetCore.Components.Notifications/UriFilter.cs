@@ -54,7 +54,7 @@ namespace AI4E.AspNetCore.Components.Notifications
 
             _uri = uri.Trim();
 
-            if (!_uri.StartsWith("/"))
+            if (!_uri.StartsWith("/", StringComparison.OrdinalIgnoreCase))
             {
                 _uri = "/" + _uri;
             }
@@ -132,7 +132,7 @@ namespace AI4E.AspNetCore.Components.Notifications
 
             var comparison = _uri.AsSpan();
 
-            if (!uri.StartsWith("/"))
+            if (!uri.StartsWith("/", StringComparison.OrdinalIgnoreCase))
             {
                 comparison = comparison.Slice(1);
             }

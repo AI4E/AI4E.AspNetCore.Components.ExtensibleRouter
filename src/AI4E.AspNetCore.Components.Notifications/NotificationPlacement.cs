@@ -62,7 +62,11 @@ namespace AI4E.AspNetCore.Components.Notifications
             return NotificationRef == other.NotificationRef;
         }
 
+#if NETSTD20
         public override bool Equals(object obj)
+#else
+        public override bool Equals(object? obj)
+#endif
         {
             return obj is NotificationPlacement notificationPlacement && Equals(notificationPlacement);
         }
@@ -84,6 +88,23 @@ namespace AI4E.AspNetCore.Components.Notifications
         public static bool operator !=(in NotificationPlacement left, in NotificationPlacement right)
         {
             return !left.Equals(right);
+        }
+
+        internal bool IsOfScopedNotificationManager(INotificationManager notificationManager)
+        {
+            var current = NotificationManager;
+
+            while (current is INotificationManagerScope scope)
+            {
+                current = scope.NotificationManager;
+
+                if (current == notificationManager)
+                {
+                    return true;
+                }
+            }
+
+            return false;
         }
     }
 }

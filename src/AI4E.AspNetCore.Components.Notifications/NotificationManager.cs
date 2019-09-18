@@ -30,6 +30,7 @@
 using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
+using System.Diagnostics.CodeAnalysis;
 using System.Threading.Tasks;
 using AI4E.Utils;
 
@@ -51,15 +52,17 @@ namespace AI4E.AspNetCore.Components.Notifications
         }
 
         /// <inheritdoc />
-        public event EventHandler NotificationsChanged;
+        public event EventHandler? NotificationsChanged;
 
         private void OnNotificationsChanged()
         {
             NotificationsChanged?.Invoke(this, EventArgs.Empty);
         }
 
+#pragma warning disable CA1721
         /// <inheritdoc />
         public IEnumerable<Notification> Notifications => GetNotificationsInternal(key: null, uri: null);
+#pragma warning restore CA1721
 
         /// <inheritdoc />
         public void Dismiss(Notification notification)
@@ -173,8 +176,10 @@ namespace AI4E.AspNetCore.Components.Notifications
 
             OnNotificationsChanged();
 
-            Task.Delay(delay).ContinueWith(_ =>
+            async Task RemoveNotificationAfterDelayAsync()
             {
+                await Task.Delay(delay).ConfigureAwait(false);
+
                 lock (_mutex)
                 {
                     if (!_isDisposed)
@@ -184,12 +189,17 @@ namespace AI4E.AspNetCore.Components.Notifications
                 }
 
                 OnNotificationsChanged();
-            }).HandleExceptions();
+            }
+
+            RemoveNotificationAfterDelayAsync().HandleExceptions();
         }
 
         /// <inheritdoc />
         public NotificationPlacement PlaceNotification(NotificationMessage notificationMessage)
         {
+            if (notificationMessage is null)
+                throw new ArgumentNullException(nameof(notificationMessage));
+
             if (!notificationMessage.NotificationType.IsValid())
             {
                 throw new ArgumentException($"The alert type must be one of the values defined in {typeof(NotificationType)}.", nameof(notificationMessage));
@@ -209,10 +219,14 @@ namespace AI4E.AspNetCore.Components.Notifications
         /// <inheritdoc />
         public void CancelNotification(in NotificationPlacement notificationPlacement)
         {
-            if (!ReferenceEquals(notificationPlacement.NotificationManager, this))
-                return;
-
-            if (notificationPlacement.NotificationRef is LinkedListNode<ManagedNotificationMessage> node)
+            if (notificationPlacement.NotificationManager != this)
+            {
+                if (notificationPlacement.IsOfScopedNotificationManager(this))
+                {
+                    notificationPlacement.NotificationManager.CancelNotification(notificationPlacement);
+                }
+            }
+            else if (notificationPlacement.NotificationRef is LinkedListNode<ManagedNotificationMessage> node)
             {
                 lock (_mutex)
                 {
@@ -244,6 +258,26 @@ namespace AI4E.AspNetCore.Components.Notifications
         {
             if (_isDisposed)
                 throw new ObjectDisposedException(GetType().FullName);
+        }
+
+        INotificationManagerScope INotificationManager.CreateScope()
+        {
+            return CreateScope();
+        }
+
+        INotificationRecorder INotificationManager.CreateRecorder()
+        {
+            return CreateRecorder();
+        }
+
+        public NotificationManagerScope CreateScope()
+        {
+            return new NotificationManagerScope(this);
+        }
+
+        public NotificationRecorder CreateRecorder()
+        {
+            return new NotificationRecorder(this);
         }
     }
 }
