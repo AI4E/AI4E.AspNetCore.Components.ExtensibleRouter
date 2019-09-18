@@ -28,6 +28,7 @@
  */
 
 using System;
+using System.Diagnostics;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
@@ -35,29 +36,32 @@ using AI4E.AspNetCore.Components.Notifications;
 using AI4E.DispatchResults;
 using AI4E.Utils;
 using Microsoft.AspNetCore.Components;
-using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.DependencyInjection;
-using System.Diagnostics;
 using Microsoft.AspNetCore.Components.Routing;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
 
 namespace AI4E.AspNetCore.Components
 {
     public abstract class ComponentBase<TModel> : ComponentBase, IDisposable
         where TModel : class
     {
+        #region Fields
+
         private readonly AsyncLocal<INotificationManager?> _ambientNotifications;
         private readonly AsyncLocal<TModel?> _ambientModel;
         private readonly Lazy<ILogger?> _logger;
-
         private readonly object _loadModelMutex = new object();
-
+        private INotificationManagerScope? _loadModelNotifications;
+        private TModel? _model;
+        private ILogger? Logger => _logger.Value;
 #pragma warning disable IDE0069
         // If _loadModelCancellationSource is null, no operation is in progress currently.
         private CancellationTokenSource? _loadModelCancellationSource;
 #pragma warning restore IDE0069
-        private INotificationManagerScope? _loadModelNotifications;
 
-        private TModel? _model;
+        #endregion
+
+        #region C'tor
 
         protected ComponentBase()
         {
@@ -72,10 +76,14 @@ namespace AI4E.AspNetCore.Components
             NavigationManager = null!;
         }
 
+        #endregion
+
         private ILogger? BuildLogger()
         {
             return ServiceProvider.GetService<ILoggerFactory>()?.CreateLogger<ComponentBase<TModel>>();
         }
+
+        #region Properties
 
         protected internal TModel? Model
             => _ambientModel.Value ?? Volatile.Read(ref _model);
@@ -86,6 +94,8 @@ namespace AI4E.AspNetCore.Components
         protected internal bool IsLoaded
             => !IsLoading && Model != null;
 
+        protected internal bool IsInitiallyLoaded { get; private set; }
+
         protected internal INotificationManager Notifications
             => _ambientNotifications.Value ?? NotificationManager;
 
@@ -94,10 +104,11 @@ namespace AI4E.AspNetCore.Components
         [Inject] private IServiceProvider ServiceProvider { get; set; }
         [Inject] private NavigationManager NavigationManager { get; set; }
 
-        private ILogger? Logger => _logger.Value;
+        #endregion
 
         protected sealed override void OnInitialized()
         {
+            IsInitiallyLoaded = false;
             NavigationManager.LocationChanged += OnLocationChanged;
             LoadModel();
             OnInitialized(false);
@@ -167,6 +178,8 @@ namespace AI4E.AspNetCore.Components
 
         protected void LoadModel()
         {
+            Task op;
+
             lock (_loadModelMutex)
             {
                 // An operation is in progress currently.
@@ -180,9 +193,10 @@ namespace AI4E.AspNetCore.Components
                 }
 
                 _loadModelCancellationSource = new CancellationTokenSource();
-                InternalLoadModelAsync(_loadModelCancellationSource)
-                    .HandleExceptions(Logger);
+                op = InternalLoadModelAsync(_loadModelCancellationSource);
             }
+
+            op.HandleExceptions(Logger);
         }
 
         private async Task InternalLoadModelAsync(CancellationTokenSource cancellationSource)
@@ -250,6 +264,8 @@ namespace AI4E.AspNetCore.Components
                 _loadModelNotifications?.Dispose();
                 _loadModelNotifications = notifications;
                 notifications.PublishNotifications();
+
+                IsInitiallyLoaded = true;
 
                 var success = model != null;
 
