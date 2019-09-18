@@ -1,0 +1,28 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFrameworks>$(FrameworkVersions)</TargetFrameworks>
+    <DefineConstants>$(DefineConstants);BLAZOR</DefineConstants>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="AI4E" Version="0.3.0-pre19080115" />
+    <PackageReference Include="AI4E.Abstractions" Version="0.3.0-pre19080115" />
+    <PackageReference Include="AI4E.Modularity.Abstractions" Version="0.3.0-pre19080115" />
+    <PackageReference Include="AI4E.Routing.SignalR.Client" Version="0.3.0-pre19080115" />
+    <PackageReference Include="Microsoft.AspNetCore.Blazor" Version="3.0.0-preview9.19457.4" />
+    <PackageReference Include="Microsoft.AspNetCore.SignalR.Client.Core" Version="3.0.0-rc1.19457.4" />
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="3.0.0-rc1.19456.10" />
+    <PackageReference Include="Newtonsoft.Json" Version="12.0.2" />
+
+    <PackageReference Include="Microsoft.Extensions.DependencyModel" Version="3.0.0-rc1-19456-20" />
+    <PackageReference Include="Nito.AsyncEx.Coordination" Version="5.0.0" />
+    <PackageReference Include="System.Collections.Immutable" Version="1.6.0-rc1.19456.4" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\AI4E.AspNetCore.Blazor.SignalR\AI4E.AspNetCore.Blazor.SignalR.csproj" />
+    <ProjectReference Include="..\AI4E.AspNetCore.Components\AI4E.AspNetCore.Components.csproj" />
+  </ItemGroup>
+
+</Project>
