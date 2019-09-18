@@ -27,8 +27,6 @@
  * --------------------------------------------------------------------------------------------------------------------
  */
 
-// TODO: If we have concurrent LoadOperations, how can we guarantee the Model property to be constant within a render-batch?
-
 using System;
 using System.Linq;
 using System.Threading;
@@ -40,6 +38,7 @@ using Microsoft.AspNetCore.Components;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.DependencyInjection;
 using System.Diagnostics;
+using Microsoft.AspNetCore.Components.Routing;
 
 namespace AI4E.AspNetCore.Components
 {
@@ -66,10 +65,11 @@ namespace AI4E.AspNetCore.Components
             _ambientModel = new AsyncLocal<TModel?>();
             _logger = new Lazy<ILogger?>(BuildLogger);
 
-            // These will be set by DI. Just to disable warning here.
+            // These will be set by DI. Just to disable warnings here.
             NotificationManager = null!;
             DateTimeProvider = null!;
             ServiceProvider = null!;
+            NavigationManager = null!;
         }
 
         private ILogger? BuildLogger()
@@ -92,12 +92,75 @@ namespace AI4E.AspNetCore.Components
         [Inject] private NotificationManager NotificationManager { get; set; }
         [Inject] private Notifications.IDateTimeProvider DateTimeProvider { get; set; } // TODO: Replace me!
         [Inject] private IServiceProvider ServiceProvider { get; set; }
+        [Inject] private NavigationManager NavigationManager { get; set; }
 
         private ILogger? Logger => _logger.Value;
 
-        protected override void OnInitialized()
+        protected sealed override void OnInitialized()
+        {
+            NavigationManager.LocationChanged += OnLocationChanged;
+            LoadModel();
+            OnInitialized(false);
+        }
+
+        protected sealed override Task OnInitializedAsync()
+        {
+            return OnInitializedAsync(false);
+        }
+
+        protected virtual void OnInitialized(bool locationChanged) { }
+
+        protected virtual Task OnInitializedAsync(bool locationChanged)
+        {
+            return Task.CompletedTask;
+        }
+
+        private void OnLocationChanged(object? sender, LocationChangedEventArgs? e)
+        {
+            OnLocationChangedAsync()
+                .HandleExceptions(Logger);
+        }
+
+        private ValueTask OnLocationChangedAsync()
         {
             LoadModel();
+            OnInitialized(true);
+
+            var task = OnInitializedAsync(true);
+
+            // If no async work is to be performed, i.e. the task has already ran to completion
+            // or was canceled by the time we got to inspect it, avoid going async and re-invoking
+            // StateHasChanged at the culmination of the async work.
+            var shouldAwaitTask = task.Status != TaskStatus.RanToCompletion &&
+                task.Status != TaskStatus.Canceled;
+
+            // We always call StateHasChanged here as we want to trigger a rerender after OnParametersSet and
+            // the synchronous part of OnParametersSetAsync has run.
+            StateHasChanged();
+
+            return shouldAwaitTask ?
+                CallStateHasChangedOnAsyncCompletion(task) :
+                default;
+        }
+
+        private async ValueTask CallStateHasChangedOnAsyncCompletion(Task task)
+        {
+            try
+            {
+                await task;
+            }
+            catch // avoiding exception filters for AOT runtime support
+            {
+                // Ignore exceptions from task cancelletions, but don't bother issuing a state change.
+                if (task.IsCanceled)
+                {
+                    return;
+                }
+
+                throw;
+            }
+
+            StateHasChanged();
         }
 
         #region Loading
@@ -400,6 +463,11 @@ namespace AI4E.AspNetCore.Components
                         _loadModelCancellationSource?.Cancel();
                     }
                     catch (ObjectDisposedException) { }
+                }
+
+                if (NavigationManager != null)
+                {
+                    NavigationManager.LocationChanged -= OnLocationChanged;
                 }
             }
         }
