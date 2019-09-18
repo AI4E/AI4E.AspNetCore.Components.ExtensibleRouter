@@ -67,7 +67,7 @@ namespace Microsoft.Extensions.DependencyInjection
             if (services == null)
                 throw new ArgumentNullException(nameof(services));
 
-            services.AddSingleton(_ => new AssemblyManager(entryAssembly));
+            services.AddSingleton(new AssemblyManager(entryAssembly));
             services.AddSingleton<IAssemblySource>(p => p.GetRequiredService<AssemblyManager>());
 
             services.AddBlazorMessageDispatcher();
@@ -80,6 +80,8 @@ namespace Microsoft.Extensions.DependencyInjection
 
             services.ConfigureApplicationParts(partManager => ConfigureApplicationParts(partManager, entryAssembly));
             services.ConfigureApplicationServices(ConfigureApplicationServices);
+
+            services.AddSingleton(ServerSideIndicator.Instance);
         }
 
         public static void AddBlazorModularity(this IServiceCollection services)
