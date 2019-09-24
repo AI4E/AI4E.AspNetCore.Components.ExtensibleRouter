@@ -171,7 +171,7 @@ namespace AI4E.AspNetCore.Blazor.SignalR
             catch (Exception ex)
 #pragma warning restore CA1031
             {
-                _logger.LogDebug($"SSE JS Side error {ex.Message}");
+                _logger?.LogDebug($"SSE JS Side error {ex.Message}");
                 _error = ex;
             }
             finally
@@ -192,7 +192,7 @@ namespace AI4E.AspNetCore.Blazor.SignalR
             if (msg is null)
                 throw new ArgumentNullException(nameof(msg));
 
-            _logger.LogDebug($"HandleSSEMessage \"{msg}\"");
+            _logger?.LogDebug($"HandleSSEMessage \"{msg}\"");
 
             // Decode data
             Log.ParsingSSE(_logger, msg.Length);
@@ -217,7 +217,7 @@ namespace AI4E.AspNetCore.Blazor.SignalR
         [JSInvokable]
         public void HandleSSEError(string msg)
         {
-            _logger.LogDebug($"HandleSSEError \"{msg}\"");
+            _logger?.LogDebug($"HandleSSEError \"{msg}\"");
             Debug.Assert(_jsTask != null);
             _jsTask!.SetException(new Exception(msg));
         }
@@ -225,7 +225,7 @@ namespace AI4E.AspNetCore.Blazor.SignalR
         [JSInvokable]
         public void HandleSSEOpened()
         {
-            _logger.LogDebug("HandleSSEOpened");
+            _logger?.LogDebug("HandleSSEOpened");
         }
 
         public async Task StopAsync()
@@ -274,7 +274,7 @@ namespace AI4E.AspNetCore.Blazor.SignalR
             catch (Exception e)
 #pragma warning restore CA1031
             {
-                _logger.LogError($"Failed to stop SSE {e}");
+                _logger?.LogError($"Failed to stop SSE {e}");
             }
         }
 

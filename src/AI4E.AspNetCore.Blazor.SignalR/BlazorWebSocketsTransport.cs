@@ -217,7 +217,7 @@ namespace AI4E.AspNetCore.Blazor.SignalR
         [JSInvokable]
         public void HandleWebSocketMessage(string msg)
         {
-            _logger.LogDebug($"HandleWebSocketMessage \"{msg}\"");
+            _logger?.LogDebug($"HandleWebSocketMessage \"{msg}\"");
 
             // Decode data
             var data = Convert.FromBase64String(msg);
@@ -369,7 +369,7 @@ namespace AI4E.AspNetCore.Blazor.SignalR
         [JSInvokable]
         public void HandleWebSocketError(string msg)
         {
-            _logger.LogDebug($"HandleWebSocketError \"{msg}\"");
+            _logger?.LogDebug($"HandleWebSocketError \"{msg}\"");
             _startTask?.SetException(new Exception(msg));
             _receiveTask?.SetException(new Exception(msg));
         }
@@ -377,14 +377,14 @@ namespace AI4E.AspNetCore.Blazor.SignalR
         [JSInvokable]
         public void HandleWebSocketOpened()
         {
-            _logger.LogDebug("HandleWebSocketOpened");
+            _logger?.LogDebug("HandleWebSocketOpened");
             _startTask?.SetResult(null);
         }
 
         [JSInvokable]
         public void HandleWebSocketClosed()
         {
-            _logger.LogDebug("HandleWebSocketClosed");
+            _logger?.LogDebug("HandleWebSocketClosed");
             _startTask?.SetCanceled();
             _receiveTask?.SetCanceled();
         }

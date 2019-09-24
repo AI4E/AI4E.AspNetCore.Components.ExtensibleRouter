@@ -85,7 +85,7 @@ namespace SignalR.Sample.App.Pages
                 opt.AccessTokenProvider = async () =>
                 {
                     var token = await GetJwtToken("DemoUser");
-                    Logger.LogInformation($"Access Token: {token}");
+                    Logger?.LogInformation($"Access Token: {token}");
                     return token;
                 };
             });
@@ -96,7 +96,7 @@ namespace SignalR.Sample.App.Pages
 
             _connection.Closed += exception =>
             {
-                Logger.LogError(exception, "Connection was closed!");
+                Logger?.LogError(exception, "Connection was closed!");
                 return Task.CompletedTask;
             };
             await _connection.StartAsync();
@@ -109,8 +109,8 @@ namespace SignalR.Sample.App.Pages
 
         public void DemoMethodObject(DemoData data)
         {
-            Logger.LogInformation("Got object!");
-            Logger.LogInformation(data?.GetType().FullName ?? "<NULL>");
+            Logger?.LogInformation("Got object!");
+            Logger?.LogInformation(data?.GetType().FullName ?? "<NULL>");
             _objectHandle.Dispose();
             if (data == null) return;
             Handle(data);
@@ -118,8 +118,8 @@ namespace SignalR.Sample.App.Pages
 
         public void DemoMethodList(DemoData[] data)
         {
-            Logger.LogInformation("Got List!");
-            Logger.LogInformation(data?.GetType().FullName ?? "<NULL>");
+            Logger?.LogInformation("Got List!");
+            Logger?.LogInformation(data?.GetType().FullName ?? "<NULL>");
             _listHandle.Dispose();
             if (data == null) return;
             Handle(data);
@@ -146,7 +146,7 @@ namespace SignalR.Sample.App.Pages
 
         private void Handle(object msg)
         {
-            Logger.LogInformation(msg.ToString());
+            Logger?.LogInformation(msg.ToString());
             Messages.Add(msg.ToString());
             StateHasChanged();
         }
