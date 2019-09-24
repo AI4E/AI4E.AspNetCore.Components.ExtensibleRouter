@@ -99,7 +99,7 @@ namespace AI4E.AspNetCore.Components
             => _ambientNotifications.Value ?? NotificationManager;
 
         [Inject] private NotificationManager NotificationManager { get; set; }
-        [Inject] private Notifications.IDateTimeProvider DateTimeProvider { get; set; } // TODO: Replace me!
+        [Inject] private Utils.IDateTimeProvider DateTimeProvider { get; set; }
         [Inject] private IServiceProvider ServiceProvider { get; set; }
         [Inject] private NavigationManager NavigationManager { get; set; }
 

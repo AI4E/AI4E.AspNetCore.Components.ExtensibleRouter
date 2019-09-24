@@ -1,4 +1,4 @@
-﻿/* License
+/* License
  * --------------------------------------------------------------------------------------------------------------------
  * This file is part of the AI4E distribution.
  *   (https://github.com/AI4E/AI4E.AspNetCore.Components.Extensions)
@@ -28,6 +28,7 @@
  */
 
 using System;
+using AI4E.Utils;
 
 namespace AI4E.AspNetCore.Components.Notifications
 {

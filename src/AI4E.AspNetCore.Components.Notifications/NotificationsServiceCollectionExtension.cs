@@ -28,6 +28,7 @@
  */
 
 using AI4E.AspNetCore.Components.Notifications;
+using AI4E.Utils;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 
 namespace Microsoft.Extensions.DependencyInjection
