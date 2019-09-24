@@ -43,10 +43,10 @@ namespace AI4E.AspNetCore.Components.Routing
 {
     internal abstract class RouteConstraint
     {
-        private static readonly IDictionary<string, RouteConstraint> _cachedConstraints
+        private static readonly IDictionary<string, RouteConstraint> CachedConstraints
             = new Dictionary<string, RouteConstraint>();
 
-        public abstract bool Match(string pathSegment, out object convertedValue);
+        public abstract bool Match(string pathSegment, out object? convertedValue);
 
         public static RouteConstraint Parse(string template, string segment, string constraint)
         {
@@ -55,7 +55,7 @@ namespace AI4E.AspNetCore.Components.Routing
                 throw new ArgumentException($"Malformed segment '{segment}' in route '{template}' contains an empty constraint.");
             }
 
-            if (_cachedConstraints.TryGetValue(constraint, out var cachedInstance))
+            if (CachedConstraints.TryGetValue(constraint, out var cachedInstance))
             {
                 return cachedInstance;
             }
@@ -64,7 +64,7 @@ namespace AI4E.AspNetCore.Components.Routing
                 var newInstance = CreateRouteConstraint(constraint);
                 if (newInstance != null)
                 {
-                    _cachedConstraints[constraint] = newInstance;
+                    CachedConstraints[constraint] = newInstance;
                     return newInstance;
                 }
                 else
@@ -74,35 +74,26 @@ namespace AI4E.AspNetCore.Components.Routing
             }
         }
 
-        private static RouteConstraint CreateRouteConstraint(string constraint)
+        private static RouteConstraint? CreateRouteConstraint(string constraint)
         {
-            switch (constraint)
+            return constraint switch
             {
-                case "bool":
-                    return new TypeRouteConstraint<bool>(bool.TryParse);
-                case "datetime":
-                    return new TypeRouteConstraint<DateTime>((string str, out DateTime result)
-                        => DateTime.TryParse(str, CultureInfo.InvariantCulture, DateTimeStyles.None, out result));
-                case "decimal":
-                    return new TypeRouteConstraint<decimal>((string str, out decimal result)
-                        => decimal.TryParse(str, NumberStyles.Number, CultureInfo.InvariantCulture, out result));
-                case "double":
-                    return new TypeRouteConstraint<double>((string str, out double result)
-                        => double.TryParse(str, NumberStyles.Number, CultureInfo.InvariantCulture, out result));
-                case "float":
-                    return new TypeRouteConstraint<float>((string str, out float result)
-                        => float.TryParse(str, NumberStyles.Number, CultureInfo.InvariantCulture, out result));
-                case "guid":
-                    return new TypeRouteConstraint<Guid>(Guid.TryParse);
-                case "int":
-                    return new TypeRouteConstraint<int>((string str, out int result)
-                        => int.TryParse(str, NumberStyles.Integer, CultureInfo.InvariantCulture, out result));
-                case "long":
-                    return new TypeRouteConstraint<long>((string str, out long result)
-                        => long.TryParse(str, NumberStyles.Integer, CultureInfo.InvariantCulture, out result));
-                default:
-                    return null;
-            }
+                "bool" => new TypeRouteConstraint<bool>(bool.TryParse),
+                "datetime" => new TypeRouteConstraint<DateTime>((string str, out DateTime result)
+                          => DateTime.TryParse(str, CultureInfo.InvariantCulture, DateTimeStyles.None, out result)),
+                "decimal" => new TypeRouteConstraint<decimal>((string str, out decimal result)
+                          => decimal.TryParse(str, NumberStyles.Number, CultureInfo.InvariantCulture, out result)),
+                "double" => new TypeRouteConstraint<double>((string str, out double result)
+                          => double.TryParse(str, NumberStyles.Number, CultureInfo.InvariantCulture, out result)),
+                "float" => new TypeRouteConstraint<float>((string str, out float result)
+                          => float.TryParse(str, NumberStyles.Number, CultureInfo.InvariantCulture, out result)),
+                "guid" => new TypeRouteConstraint<Guid>(Guid.TryParse),
+                "int" => new TypeRouteConstraint<int>((string str, out int result)
+                          => int.TryParse(str, NumberStyles.Integer, CultureInfo.InvariantCulture, out result)),
+                "long" => new TypeRouteConstraint<long>((string str, out long result)
+                          => long.TryParse(str, NumberStyles.Integer, CultureInfo.InvariantCulture, out result)),
+                _ => null,
+            };
         }
     }
 }

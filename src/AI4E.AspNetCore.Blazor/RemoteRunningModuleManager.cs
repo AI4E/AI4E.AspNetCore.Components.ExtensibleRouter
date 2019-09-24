@@ -114,10 +114,10 @@ namespace AI4E.AspNetCore.Blazor
 
         public IReadOnlyCollection<ModuleIdentifier> Modules => Volatile.Read(ref _modules);
 
-        public event EventHandler<ModuleIdentifier> ModuleStarted;
-        public event EventHandler<ModuleIdentifier> ModuleTerminated;
+        public event EventHandler<ModuleIdentifier>? ModuleStarted;
+        public event EventHandler<ModuleIdentifier>? ModuleTerminated;
 
-        public Task Initialization { get; }
+        public Task Initialization => _initializationHelper.Initialization;
 
         public void Dispose()
         {
@@ -125,15 +125,17 @@ namespace AI4E.AspNetCore.Blazor
         }
     }
 
+#pragma warning disable CA1812
     [MessageHandler]
     internal sealed class RunningModuleEventHandler
+#pragma warning restore CA1812
     {
         private readonly IRunningModuleManager _runningModuleManager;
-        private readonly ILogger<RunningModuleEventHandler> _logger;
+        private readonly ILogger<RunningModuleEventHandler>? _logger;
 
         public RunningModuleEventHandler(
             IRunningModuleManager runningModuleManager,
-            ILogger<RunningModuleEventHandler> logger = null)
+            ILogger<RunningModuleEventHandler>? logger = null)
         {
             if (runningModuleManager == null)
                 throw new ArgumentNullException(nameof(runningModuleManager));

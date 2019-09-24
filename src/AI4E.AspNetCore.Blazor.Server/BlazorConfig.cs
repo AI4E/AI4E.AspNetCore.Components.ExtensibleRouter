@@ -55,9 +55,9 @@ namespace AI4E.AspNetCore.Blazor.Server
     {
         public string SourceMSBuildPath { get; }
         public string SourceOutputAssemblyPath { get; }
-        public string WebRootPath { get; }
+        public string? WebRootPath { get; }
         public string DistPath
-            => Path.Combine(Path.GetDirectoryName(SourceOutputAssemblyPath), "dist");
+            => Path.Combine(Path.GetDirectoryName(SourceOutputAssemblyPath)!, "dist");
         public bool EnableAutoRebuilding { get; }
         public bool EnableDebugging { get; }
 
@@ -82,9 +82,9 @@ namespace AI4E.AspNetCore.Blazor.Server
             }
 
             var sourceMsBuildDir = Path.GetDirectoryName(SourceMSBuildPath);
-            SourceOutputAssemblyPath = Path.Combine(sourceMsBuildDir, configLines[1]);
+            SourceOutputAssemblyPath = Path.Combine(sourceMsBuildDir!, configLines[1]);
 
-            var webRootPath = Path.Combine(sourceMsBuildDir, "wwwroot");
+            var webRootPath = Path.Combine(sourceMsBuildDir!, "wwwroot");
             if (Directory.Exists(webRootPath))
             {
                 WebRootPath = webRootPath;

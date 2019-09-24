@@ -30,6 +30,7 @@
 using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
+using System.Diagnostics;
 using System.Linq;
 using System.Reflection;
 using System.Threading;
@@ -37,16 +38,16 @@ using System.Threading.Tasks;
 using AI4E.AspNetCore.Components.Extensibility;
 using AI4E.Modularity;
 using AI4E.Modularity.Metadata;
-using AI4E.Utils;
 using Microsoft.Extensions.Logging;
 using Microsoft.JSInterop;
-using static System.Diagnostics.Debug;
 
 namespace AI4E.AspNetCore.Blazor
 {
+#pragma warning disable CA1812
     internal sealed class InstallationSetManager : IInstallationSetManager, IDisposable
+#pragma warning restore CA1812
     {
-        private const string _reloadBrowserMethod = "ai4e.reloadBrowser";
+        private const string ReloadBrowserMethod = "ai4e.reloadBrowser";
         private readonly IRunningModuleManager _runningModuleManager;
         private readonly IModuleAssemblyDownloader _moduleAssemblyDownloader;
 
@@ -55,11 +56,11 @@ namespace AI4E.AspNetCore.Blazor
         private readonly IModuleManifestProvider _moduleManifestProvider;
         private readonly AssemblyManager _assemblyManager;
         private readonly IJSRuntime _jSRuntime;
-        private readonly ILogger<InstallationSetManager> _logger;
+        private readonly ILogger<InstallationSetManager>? _logger;
         private ISet<ModuleIdentifier> _running = new HashSet<ModuleIdentifier>();
 
         private ImmutableDictionary<string, (Version version, bool isComponentAssembly, ModuleIdentifier module)> _installedAssemblies;
-        private CancellationTokenSource _disposalCancellationSource = new CancellationTokenSource();
+        private CancellationTokenSource? _disposalCancellationSource = new CancellationTokenSource();
 
         #endregion
 
@@ -71,7 +72,7 @@ namespace AI4E.AspNetCore.Blazor
             IModuleManifestProvider moduleManifestProvider,
             AssemblyManager assemblyManager,
             IJSRuntime jSRuntime,
-            ILogger<InstallationSetManager> logger = null)
+            ILogger<InstallationSetManager>? logger = null)
         {
             if (runningModuleManager == null)
                 throw new ArgumentNullException(nameof(runningModuleManager));
@@ -101,7 +102,14 @@ namespace AI4E.AspNetCore.Blazor
             {
                 var isComponentAssembly = assemblyManager.Assemblies.Contains(asm);
 
-                installedAssemblyBuilder.Add(asm.GetName().Name, (asm.GetName().Version, isComponentAssembly, ModuleIdentifier.UnknownModule));
+                var asmName = asm.GetName();
+                var name = asmName.Name;
+                var version = asmName.Version;
+
+                Debug.Assert(name != null);
+                Debug.Assert(version != null);
+
+                installedAssemblyBuilder.Add(name!, (version!, isComponentAssembly, ModuleIdentifier.UnknownModule));
             }
 
             _logger?.LogTrace("Initially loaded assemblies:\r\n" + installedAssemblyBuilder.Select(p => p.Key + " " + p.Value.version).Aggregate((e, n) => e + "\r\n" + n));
@@ -112,7 +120,7 @@ namespace AI4E.AspNetCore.Blazor
             runningModuleManager.ModuleTerminated += UpdateInstallation;
         }
 
-        private void UpdateInstallation(object sender, ModuleIdentifier e)
+        private void UpdateInstallation(object? sender, ModuleIdentifier e)
         {
             var cancellationSource = Volatile.Read(ref _disposalCancellationSource);
 
@@ -126,7 +134,7 @@ namespace AI4E.AspNetCore.Blazor
 
         #region IInstallationSetManager
 
-        public event EventHandler InstallationSetChanged;
+        public event EventHandler? InstallationSetChanged;
 
         #endregion
 
@@ -137,7 +145,7 @@ namespace AI4E.AspNetCore.Blazor
             var installedModules = installationSet.Except(_running).ToList();
             var uninstalledModules = _running.Except(installationSet).ToList();
 
-            await UpdateAsync(installedModules, uninstalledModules, cancellation);
+            await UpdateAsync(installedModules, uninstalledModules, cancellation).ConfigureAwait(false);
 
             _running = new HashSet<ModuleIdentifier>(installationSet);
             InstallationSetChanged?.Invoke(this, EventArgs.Empty);
@@ -231,7 +239,7 @@ namespace AI4E.AspNetCore.Blazor
                         continue;
                     }
 
-                    Assert(existingInstalled.version < assembly.AssemblyVersion);
+                    Debug.Assert(existingInstalled.version < assembly.AssemblyVersion);
                     // This cannot happen, as we cannot unload (uninstall) assemblies.
                     // The version of the existing (installed) assembly is greater or equal than the one, we try to install.
                     //if (existingInstalled.version >= assembly.AssemblyVersion)
@@ -299,7 +307,7 @@ namespace AI4E.AspNetCore.Blazor
 
                 var asm = _moduleAssemblyDownloader.GetAssembly(asmName);
 
-                Assert(asm != null);
+                Debug.Assert(asm != null);
 
                 if (asm != null)
                 {
@@ -312,7 +320,7 @@ namespace AI4E.AspNetCore.Blazor
 
         private async ValueTask InstallAssemblyAsync(KeyValuePair<string, (Version version, bool isComponentAssembly, ModuleIdentifier module)> assembly, CancellationToken cancellation)
         {
-            Assembly asm;
+            Assembly? asm;
             do
             {
                 asm = await _moduleAssemblyDownloader.InstallAssemblyAsync(assembly.Value.module, assembly.Key, cancellation);
@@ -320,9 +328,9 @@ namespace AI4E.AspNetCore.Blazor
             while (asm == null); // TODO: Should we throw an exception and abort instead of retrying this forever?
         }
 
-        private async ValueTask<BlazorModuleManifest> LoadManifestAsync(ModuleIdentifier installedModule, CancellationToken cancellation)
+        private async ValueTask<BlazorModuleManifest?> LoadManifestAsync(ModuleIdentifier installedModule, CancellationToken cancellation)
         {
-            BlazorModuleManifest manifest;
+            BlazorModuleManifest? manifest;
 
             //do
             //{
@@ -337,11 +345,11 @@ namespace AI4E.AspNetCore.Blazor
         {
             if (_jSRuntime is IJSInProcessRuntime jSInProcessRuntime)
             {
-                jSInProcessRuntime.Invoke<object>(_reloadBrowserMethod);
+                jSInProcessRuntime.Invoke<object>(ReloadBrowserMethod);
             }
             else
             {
-                _jSRuntime.InvokeAsync<object>(_reloadBrowserMethod).ConfigureAwait(false).GetAwaiter().GetResult();
+                _jSRuntime.InvokeAsync<object>(ReloadBrowserMethod).ConfigureAwait(false).GetAwaiter().GetResult();
             }
         }
 

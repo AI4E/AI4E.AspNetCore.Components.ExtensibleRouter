@@ -58,7 +58,7 @@ namespace Microsoft.AspNetCore.SignalR.Client
             IJSRuntime jsRuntime,
             NavigationManager navigationManager,
             HttpTransportType? transports = null,
-            Action<BlazorHttpConnectionOptions> options = null)
+            Action<BlazorHttpConnectionOptions>? options = null)
         {
             return WithUrlBlazor(hubConnectionBuilder, new Uri(url), jsRuntime, navigationManager, transports, options);
         }
@@ -69,7 +69,7 @@ namespace Microsoft.AspNetCore.SignalR.Client
             IJSRuntime jsRuntime,
             NavigationManager navigationManager,
             HttpTransportType? transports = null,
-            Action<BlazorHttpConnectionOptions> options = null)
+            Action<BlazorHttpConnectionOptions>? options = null)
         {
             if (hubConnectionBuilder == null)
                 throw new ArgumentNullException(nameof(hubConnectionBuilder));
@@ -104,15 +104,18 @@ namespace Microsoft.AspNetCore.SignalR.Client
             return hubConnectionBuilder;
         }
 
+#pragma warning disable CA1812
         private class BlazorHttpConnectionOptionsDerivedHttpEndPoint : UriEndPoint
+#pragma warning restore CA1812
         {
             public BlazorHttpConnectionOptionsDerivedHttpEndPoint(IOptions<BlazorHttpConnectionOptions> options)
                 : base(options.Value.Url)
             { }
         }
-
+#pragma warning disable CA1812
         private class BlazorHubProtocolDerivedHttpOptionsConfigurer
             : IConfigureNamedOptions<BlazorHttpConnectionOptions>
+#pragma warning restore CA1812
         {
             private readonly TransferFormat _defaultTransferFormat;
 

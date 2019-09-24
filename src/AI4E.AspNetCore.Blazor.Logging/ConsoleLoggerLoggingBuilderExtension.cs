@@ -46,7 +46,9 @@ namespace Microsoft.Extensions.Logging
         /// <returns>The logging builder with the browser console logging added.</returns>
         public static ILoggingBuilder AddBrowserConsole(this ILoggingBuilder builder)
         {
+#pragma warning disable CA1062
             builder.Services.TryAddEnumerable(ServiceDescriptor.Singleton<ILoggerProvider, ConsoleLoggerProvider>());
+#pragma warning restore CA1062
             return builder;
         }
 
@@ -56,7 +58,8 @@ namespace Microsoft.Extensions.Logging
         /// <param name="builder">The logging builder.</param>
         /// <param name="configure">A configuration for the <see cref="ConsoleLoggerOptions"/>.</param>
         /// <returns>The logging builder with the browser console logging added.</returns>
-        public static ILoggingBuilder AddBrowserConsole(this ILoggingBuilder builder, Action<ConsoleLoggerOptions> configure)
+        public static ILoggingBuilder AddBrowserConsole(
+            this ILoggingBuilder builder, Action<ConsoleLoggerOptions> configure)
         {
             if (configure == null)
             {
@@ -64,7 +67,9 @@ namespace Microsoft.Extensions.Logging
             }
 
             builder.AddBrowserConsole();
+#pragma warning disable CA1062
             builder.Services.Configure(configure);
+#pragma warning restore CA1062
 
             return builder;
         }

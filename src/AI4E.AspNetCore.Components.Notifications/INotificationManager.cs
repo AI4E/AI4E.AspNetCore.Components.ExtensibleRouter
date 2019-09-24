@@ -46,9 +46,10 @@ namespace AI4E.AspNetCore.Components.Notifications
     {
         event EventHandler NotificationsChanged;
 
-        IEnumerable<TNotification> Notifications { get; }
+        IEnumerable<TNotification> GetNotifications();
         void Dismiss(TNotification notification);
         IEnumerable<TNotification> GetNotifications(string key);
         IEnumerable<TNotification> GetNotifications(string key, string uri);
+        IEnumerable<TNotification> GetNotifications(string key, Uri uri);
     }
 }

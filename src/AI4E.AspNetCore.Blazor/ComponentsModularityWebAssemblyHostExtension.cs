@@ -48,7 +48,9 @@ namespace Microsoft.AspNetCore.Blazor.Hosting
             {
                 async Task InitializeApplicationServicesAsync()
                 {
-                    await applicationServiceManager.InitializeApplicationServicesAsync(serviceProvider, cancellation: default);
+                    await applicationServiceManager
+                        .InitializeApplicationServicesAsync(serviceProvider, cancellation: default)
+                        .ConfigureAwait(false);
 
                     // Forces an asynchronous yield to the continuation that blocks synchronously
                     // We do not want the contiuations of applicationServiceManager.InitializeApplicationServicesAsync to be blocked indefinitely

@@ -55,14 +55,14 @@ namespace AI4E.AspNetCore.Components.Routing
     // * Parameter path segments (Like /Customer/{Id}/Orders/{OrderId})
     internal class TemplateParser
     {
-        public static readonly char[] _invalidParameterNameCharacters =
+        public static readonly char[] InvalidParameterNameCharacters =
             new char[] { '*', '?', '{', '}', '=', '.' };
 
         internal static RouteTemplate ParseTemplate(string template)
         {
             var originalTemplate = template;
             template = template.Trim('/');
-            if (template == "")
+            if (template.Length == 0)
             {
                 // Special case "/";
                 return new RouteTemplate("/", Array.Empty<TemplateSegment>());
@@ -102,7 +102,7 @@ namespace AI4E.AspNetCore.Components.Routing
                             $"Invalid template '{template}'. Empty parameter name in segment '{segment}' is not allowed.");
                     }
 
-                    var invalidCharacter = segment.IndexOfAny(_invalidParameterNameCharacters, 1, segment.Length - 2);
+                    var invalidCharacter = segment.IndexOfAny(InvalidParameterNameCharacters, 1, segment.Length - 2);
                     if (invalidCharacter != -1)
                     {
                         throw new InvalidOperationException(

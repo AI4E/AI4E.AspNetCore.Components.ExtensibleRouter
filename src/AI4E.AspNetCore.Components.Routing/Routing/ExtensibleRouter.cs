@@ -37,10 +37,11 @@
 
 using System;
 using System.Collections.Generic;
-using System.Collections.ObjectModel;
+using System.Collections.Immutable;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.Routing;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 
 namespace AI4E.AspNetCore.Components.Routing
@@ -51,38 +52,39 @@ namespace AI4E.AspNetCore.Components.Routing
     public abstract class ExtensibleRouter : IComponent, IHandleAfterRender, IDisposable
     {
         private static readonly char[] QueryOrHashStartChar = new[] { '?', '#' };
-        private static readonly ReadOnlyDictionary<string, object> EmptyParametersDictionary
-                       = new ReadOnlyDictionary<string, object>(new Dictionary<string, object>());
+        private static readonly ImmutableDictionary<string, object?> EmptyParametersDictionary
+                       = ImmutableDictionary<string, object?>.Empty;
 
         private RenderHandle _renderHandle;
-        private string _baseUri;
-        private string _locationAbsolute;
+        private string _baseUri = null!;
+        private string _locationAbsolute = null!;
         private bool _isInitialized;
         private bool _navigationInterceptionEnabled;
-        private ILogger<ExtensibleRouter> _logger;
+        private ILogger<ExtensibleRouter>? _logger;
 
-        [Inject] private NavigationManager NavigationManager { get; set; }
+        [Inject] private NavigationManager NavigationManager { get; set; } = null!;
 
-        [Inject] private INavigationInterception NavigationInterception { get; set; }
+        [Inject] private INavigationInterception NavigationInterception { get; set; } = null!;
 
-        [Inject] private ILoggerFactory LoggerFactory { get; set; }
+        [Inject] private IServiceProvider ServiceProvider { get; set; } = null!;
 
         /// <summary>
         /// Gets or sets the content to display when no match is found for the requested route.
         /// </summary>
-        [Parameter] public RenderFragment NotFound { get; set; }
+        [Parameter] public RenderFragment? NotFound { get; set; }
 
         /// <summary>
         /// Gets or sets the content to display when a match is found for the requested route.
         /// </summary>
-        [Parameter] public RenderFragment<RouteData> Found { get; set; }
+        [Parameter] public RenderFragment<RouteData>? Found { get; set; }
 
-        private RouteTable Routes { get; set; }
+        private RouteTable Routes { get; set; } = null!;
 
         /// <inheritdoc />
         public void Attach(RenderHandle renderHandle)
         {
-            _logger = LoggerFactory.CreateLogger<ExtensibleRouter>();
+            var loggerFactory = ServiceProvider.GetService<ILoggerFactory>();
+            _logger = loggerFactory?.CreateLogger<ExtensibleRouter>();
             _renderHandle = renderHandle;
             _baseUri = NavigationManager.BaseUri;
             _locationAbsolute = NavigationManager.Uri;
@@ -147,6 +149,7 @@ namespace AI4E.AspNetCore.Components.Routing
         public void Dispose()
         {
             Dispose(true);
+            GC.SuppressFinalize(this);
         }
 
         /// <summary>
@@ -155,7 +158,10 @@ namespace AI4E.AspNetCore.Components.Routing
         /// <param name="disposing">A boolean value indicating whether this is a managed dispose.</param>
         protected virtual void Dispose(bool disposing)
         {
-            NavigationManager.LocationChanged -= OnLocationChanged;
+            if (disposing)
+            {
+                NavigationManager.LocationChanged -= OnLocationChanged;
+            }
         }
 
         private static string StringUntilAny(string str, char[] chars)
@@ -203,22 +209,36 @@ namespace AI4E.AspNetCore.Components.Routing
             {
                 if (!typeof(IComponent).IsAssignableFrom(context.Handler))
                 {
-                    throw new InvalidOperationException($"The type {context.Handler.FullName} " +
+                    throw new InvalidOperationException($"The type {context.Handler!.FullName} " +
                         $"does not implement {typeof(IComponent).FullName}.");
                 }
 
-                Log.NavigatingToComponent(_logger, context.Handler, locationPath, _baseUri);
+                if (_logger != null)
+                {
+                    Log.NavigatingToComponent(_logger, context.Handler!, locationPath, _baseUri);
+                }
 
                 var routeData = new RouteData(
                     context.Handler,
                     context.Parameters ?? EmptyParametersDictionary);
-                _renderHandle.Render(Found(routeData));
+
+                if (Found != null)
+                {
+                    _renderHandle.Render(Found(routeData));
+                }
+                else
+                {
+                    _renderHandle.Render(_ => { });
+                }
             }
             else
             {
                 if (!isNavigationIntercepted)
                 {
-                    Log.DisplayingNotFound(_logger, locationPath, _baseUri);
+                    if (_logger != null)
+                    {
+                        Log.DisplayingNotFound(_logger, locationPath, _baseUri);
+                    }
 
                     // We did not find a Component that matches the route.
                     // Only show the NotFound content if the application developer programatically got us here i.e we did not
@@ -227,13 +247,16 @@ namespace AI4E.AspNetCore.Components.Routing
                 }
                 else
                 {
-                    Log.NavigatingToExternalUri(_logger, _locationAbsolute, locationPath, _baseUri);
+                    if (_logger != null)
+                    {
+                        Log.NavigatingToExternalUri(_logger, _locationAbsolute, locationPath, _baseUri);
+                    }
                     NavigationManager.NavigateTo(_locationAbsolute, forceLoad: true);
                 }
             }
         }
 
-        private void OnLocationChanged(object sender, LocationChangedEventArgs args)
+        private void OnLocationChanged(object? sender, LocationChangedEventArgs args)
         {
             _locationAbsolute = args.Location;
             if (_renderHandle.IsInitialized && Routes != null)
@@ -242,7 +265,9 @@ namespace AI4E.AspNetCore.Components.Routing
             }
         }
 
+#pragma warning disable CA1033
         Task IHandleAfterRender.OnAfterRenderAsync()
+#pragma warning restore CA1033
         {
             if (!_navigationInterceptionEnabled)
             {
@@ -255,13 +280,13 @@ namespace AI4E.AspNetCore.Components.Routing
 
         private static class Log
         {
-            private static readonly Action<ILogger, string, string, Exception> DisplayingNotFoundLogMessage =
+            private static readonly Action<ILogger, string, string, Exception?> DisplayingNotFoundLogMessage =
                 LoggerMessage.Define<string, string>(LogLevel.Debug, new EventId(1, "DisplayingNotFound"), $"Displaying {nameof(NotFound)} because path '{{Path}}' with base URI '{{BaseUri}}' does not match any component route");
 
-            private static readonly Action<ILogger, Type, string, string, Exception> NavigatingToComponentLogMessage =
+            private static readonly Action<ILogger, Type, string, string, Exception?> NavigatingToComponentLogMessage =
                 LoggerMessage.Define<Type, string, string>(LogLevel.Debug, new EventId(2, "NavigatingToComponent"), "Navigating to component {ComponentType} in response to path '{Path}' with base URI '{BaseUri}'");
 
-            private static readonly Action<ILogger, string, string, string, Exception> NavigatingToExternalUriLogMessage =
+            private static readonly Action<ILogger, string, string, string, Exception?> NavigatingToExternalUriLogMessage =
                 LoggerMessage.Define<string, string, string>(LogLevel.Debug, new EventId(3, "NavigatingToExternalUri"), "Navigating to non-component URI '{ExternalUri}' in response to path '{Path}' with base URI '{BaseUri}'");
 
             internal static void DisplayingNotFound(ILogger logger, string path, string baseUri)

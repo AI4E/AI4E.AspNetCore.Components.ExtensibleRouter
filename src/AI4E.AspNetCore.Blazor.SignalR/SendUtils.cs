@@ -51,7 +51,7 @@ namespace AI4E.AspNetCore.Blazor.SignalR
 {
     internal static class SendUtils
     {
-        public static async Task SendMessages(Uri sendUrl, IDuplexPipe application, HttpClient httpClient, ILogger logger, CancellationToken cancellationToken = default)
+        public static async Task SendMessages(Uri sendUrl, IDuplexPipe application, HttpClient httpClient, ILogger? logger, CancellationToken cancellationToken = default)
         {
             Log.SendStarted(logger);
 
@@ -86,7 +86,9 @@ namespace AI4E.AspNetCore.Blazor.SignalR
                             // rather than buffer the entire response. This gives a small perf boost.
                             // Note that it is important to dispose of the response when doing this to
                             // avoid leaving the connection open.
-                            using (var response = await httpClient.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, cancellationToken))
+                            using (var response = await httpClient
+                                .SendAsync(request, HttpCompletionOption.ResponseHeadersRead, cancellationToken)
+                                .ConfigureAwait(false))
                             {
                                 response.EnsureSuccessStatusCode();
                             }
@@ -148,63 +150,84 @@ namespace AI4E.AspNetCore.Blazor.SignalR
 
         private static class Log
         {
-            private static readonly Action<ILogger, Exception> _sendStarted =
+            private static readonly Action<ILogger, Exception?> SendStartedMessage =
                 LoggerMessage.Define(LogLevel.Debug, new EventId(100, "SendStarted"), "Starting the send loop.");
 
-            private static readonly Action<ILogger, Exception> _sendStopped =
+            private static readonly Action<ILogger, Exception?> SendStoppedMessage =
                 LoggerMessage.Define(LogLevel.Debug, new EventId(101, "SendStopped"), "Send loop stopped.");
 
-            private static readonly Action<ILogger, Exception> _sendCanceled =
+            private static readonly Action<ILogger, Exception?> SendCanceledMessage =
                 LoggerMessage.Define(LogLevel.Debug, new EventId(102, "SendCanceled"), "Send loop canceled.");
 
-            private static readonly Action<ILogger, long, Uri, Exception> _sendingMessages =
+            private static readonly Action<ILogger, long, Uri, Exception?> SendingMessagesMessage =
                 LoggerMessage.Define<long, Uri>(LogLevel.Debug, new EventId(103, "SendingMessages"), "Sending {Count} bytes to the server using url: {Url}.");
 
-            private static readonly Action<ILogger, Exception> _sentSuccessfully =
+            private static readonly Action<ILogger, Exception?> SentSuccessfullyMessage =
                 LoggerMessage.Define(LogLevel.Debug, new EventId(104, "SentSuccessfully"), "Message(s) sent successfully.");
 
-            private static readonly Action<ILogger, Exception> _noMessages =
+            private static readonly Action<ILogger, Exception?> NoMessagesMessage =
                 LoggerMessage.Define(LogLevel.Debug, new EventId(105, "NoMessages"), "No messages in batch to send.");
 
-            private static readonly Action<ILogger, Uri, Exception> _errorSending =
+            private static readonly Action<ILogger, Uri, Exception?> ErrorSendingMessage =
                 LoggerMessage.Define<Uri>(LogLevel.Error, new EventId(106, "ErrorSending"), "Error while sending to '{Url}'.");
 
             // When adding a new log message make sure to check with LongPollingTransport and ServerSentEventsTransport that share these logs to not have conflicting EventIds
             // We start the IDs at 100 to make it easy to avoid conflicting IDs
 
-            public static void SendStarted(ILogger logger)
+            public static void SendStarted(ILogger? logger)
             {
-                _sendStarted(logger, null);
+                if (logger is null)
+                    return;
+
+                SendStartedMessage(logger, null);
             }
 
-            public static void SendCanceled(ILogger logger)
+            public static void SendCanceled(ILogger? logger)
             {
-                _sendCanceled(logger, null);
+                if (logger is null)
+                    return;
+
+                SendCanceledMessage(logger, null);
             }
 
-            public static void SendStopped(ILogger logger)
+            public static void SendStopped(ILogger? logger)
             {
-                _sendStopped(logger, null);
+                if (logger is null)
+                    return;
+
+                SendStoppedMessage(logger, null);
             }
 
-            public static void SendingMessages(ILogger logger, long count, Uri url)
+            public static void SendingMessages(ILogger? logger, long count, Uri url)
             {
-                _sendingMessages(logger, count, url, null);
+                if (logger is null)
+                    return;
+
+                SendingMessagesMessage(logger, count, url, null);
             }
 
-            public static void SentSuccessfully(ILogger logger)
+            public static void SentSuccessfully(ILogger? logger)
             {
-                _sentSuccessfully(logger, null);
+                if (logger is null)
+                    return;
+
+                SentSuccessfullyMessage(logger, null);
             }
 
-            public static void NoMessages(ILogger logger)
+            public static void NoMessages(ILogger? logger)
             {
-                _noMessages(logger, null);
+                if (logger is null)
+                    return;
+
+                NoMessagesMessage(logger, null);
             }
 
-            public static void ErrorSending(ILogger logger, Uri url, Exception exception)
+            public static void ErrorSending(ILogger? logger, Uri url, Exception? exception)
             {
-                _errorSending(logger, url, exception);
+                if (logger is null)
+                    return;
+
+                ErrorSendingMessage(logger, url, exception);
             }
         }
     }

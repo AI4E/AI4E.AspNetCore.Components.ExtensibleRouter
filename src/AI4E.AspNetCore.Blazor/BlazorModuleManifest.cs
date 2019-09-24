@@ -39,11 +39,15 @@ namespace AI4E.AspNetCore.Blazor
 #else
     public
 #endif
+#pragma warning disable CA1812
         sealed class BlazorModuleManifest
+#pragma warning restore CA1812
     {
-        public string Name { get; set; }
+        public string Name { get; set; } = null!;
 
+#pragma warning disable CA2227
         public List<BlazorModuleManifestAssemblyEntry> Assemblies { get; set; } = new List<BlazorModuleManifestAssemblyEntry>();
+#pragma warning restore CA2227
     }
 
 #if BLAZOR
@@ -51,12 +55,14 @@ namespace AI4E.AspNetCore.Blazor
 #else
     public
 #endif
+#pragma warning disable CA1812
         sealed class BlazorModuleManifestAssemblyEntry
+#pragma warning restore CA1812
     {
-        public string AssemblyName { get; set; }
+        public string AssemblyName { get; set; } = null!;
 
         [JsonConverter(typeof(VersionConverter))]
-        public Version AssemblyVersion { get; set; }
+        public Version AssemblyVersion { get; set; } = null!;
         public bool IsComponentAssembly { get; set; }
     }
 }

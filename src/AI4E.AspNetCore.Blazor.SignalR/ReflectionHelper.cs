@@ -44,9 +44,19 @@ namespace AI4E.AspNetCore.Blazor.SignalR
 {
     public static class ReflectionHelper
     {
-        public static object CreateInstance(Assembly assembly, string typeName, params object[] args)
+        public static object? CreateInstance(Assembly assembly, string typeName, params object[] args)
         {
+            if (assembly is null)
+                throw new ArgumentNullException(nameof(assembly));
+
+            if (typeName is null)
+                throw new ArgumentNullException(nameof(typeName));
+
             var type = assembly.GetType(typeName);
+
+            if (type is null)
+                return null;
+
             return Activator.CreateInstance(type, args);
         }
     }

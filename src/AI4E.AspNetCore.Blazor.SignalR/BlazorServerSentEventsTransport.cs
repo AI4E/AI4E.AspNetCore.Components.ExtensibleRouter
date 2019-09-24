@@ -38,13 +38,13 @@
  */
 
 using System;
+using System.Diagnostics;
 using System.IO.Pipelines;
 using System.Net.Http;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Connections;
 using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.JSInterop;
 
 namespace AI4E.AspNetCore.Blazor.SignalR
@@ -53,39 +53,42 @@ namespace AI4E.AspNetCore.Blazor.SignalR
     {
         private readonly HttpClient _httpClient;
         private readonly IJSRuntime _jsRuntime;
-        private readonly ILogger _logger;
-        private volatile Exception _error;
+        private readonly ILogger? _logger;
+        private volatile Exception? _error;
         private readonly CancellationTokenSource _transportCts = new CancellationTokenSource();
 
-        private IDuplexPipe _transport;
-        private IDuplexPipe _application;
+        private IDuplexPipe? _transport;
+        private IDuplexPipe? _application;
 
+#pragma warning disable CA1822
         public string InternalSSEId { [JSInvokable] get; }
-
-        public string SSEAccessToken { [JSInvokable] get; }
+        public string? SSEAccessToken { [JSInvokable] get; }
+#pragma warning restore CA1822
 
         internal Task Running { get; private set; } = Task.CompletedTask;
 
-        public PipeReader Input => _transport.Input;
+        public PipeReader? Input => _transport?.Input;
+        public PipeWriter? Output => _transport?.Output;
 
-        public PipeWriter Output => _transport.Output;
+        private TaskCompletionSource<object>? _jsTask;
 
-        private TaskCompletionSource<object> _jsTask;
-
-        public BlazorServerSentEventsTransport(string token, HttpClient httpClient, IJSRuntime jsRuntime, ILoggerFactory loggerFactory)
+        public BlazorServerSentEventsTransport(string? token, HttpClient httpClient, IJSRuntime jsRuntime, ILoggerFactory? loggerFactory)
         {
             if (jsRuntime == null)
                 throw new ArgumentNullException(nameof(jsRuntime));
 
             _httpClient = httpClient;
             _jsRuntime = jsRuntime;
-            _logger = (loggerFactory ?? NullLoggerFactory.Instance).CreateLogger<BlazorServerSentEventsTransport>();
+            _logger = loggerFactory?.CreateLogger<BlazorServerSentEventsTransport>();
             InternalSSEId = Guid.NewGuid().ToString();
             SSEAccessToken = token;
         }
 
-        public Task StartAsync(Uri url, TransferFormat transferFormat, CancellationToken cancellationToken)
+        public Task StartAsync(Uri url, TransferFormat transferFormat)
         {
+            if (url is null)
+                throw new ArgumentNullException(nameof(url));
+
             if (transferFormat != TransferFormat.Text)
             {
                 throw new ArgumentException(
@@ -111,34 +114,35 @@ namespace AI4E.AspNetCore.Blazor.SignalR
         private async Task ProcessAsync(Uri url)
         {
             // Start sending and receiving
-            var receiving = ProcessEventStream(url.ToString(), _application, _transportCts.Token);
-            var sending = SendUtils.SendMessages(url, _application, _httpClient, _logger, cancellationToken: default);
+            Debug.Assert(_application != null);
+            var receiving = ProcessEventStream(url.ToString(), _transportCts.Token);
+            var sending = SendUtils.SendMessages(url, _application!, _httpClient, _logger, cancellationToken: default);
 
             // Wait for send or receive to complete
-            var trigger = await Task.WhenAny(receiving, sending);
+            var trigger = await Task.WhenAny(receiving, sending).ConfigureAwait(false);
 
             if (trigger == receiving)
             {
                 // Cancel the application so that ReadAsync yields
-                _application.Input.CancelPendingRead();
+                _application!.Input.CancelPendingRead();
 
-                await sending;
+                await sending.ConfigureAwait(false);
             }
             else
             {
                 // Set the sending error so we communicate that to the application
-                _error = sending.IsFaulted ? sending.Exception.InnerException : null;
+                _error = sending.IsFaulted ? (sending.Exception?.InnerException ?? sending.Exception) : null;
 
                 _transportCts.Cancel();
 
                 // Cancel any pending flush so that we can quit
-                _application.Output.CancelPendingFlush();
+                _application!.Output.CancelPendingFlush();
 
-                await receiving;
+                await receiving.ConfigureAwait(false);
             }
         }
 
-        private async Task ProcessEventStream(string url, IDuplexPipe application, CancellationToken transportCtsToken)
+        private async Task ProcessEventStream(string url, CancellationToken transportCtsToken)
         {
             Log.StartReceive(_logger);
 
@@ -156,32 +160,38 @@ namespace AI4E.AspNetCore.Blazor.SignalR
                 transportCtsToken.Register(() => { task.SetCanceled(); });
 
                 // Wait until js side stops
-                await task.Task;
+                await task.Task.ConfigureAwait(false);
 
                 if (task.Task.IsCanceled)
                 {
                     Log.ReceiveCanceled(_logger);
                 }
             }
+#pragma warning disable CA1031
             catch (Exception ex)
+#pragma warning restore CA1031
             {
                 _logger.LogDebug($"SSE JS Side error {ex.Message}");
                 _error = ex;
             }
             finally
             {
-                _application.Output.Complete(_error);
+                Debug.Assert(_application != null);
+                _application!.Output.Complete(_error);
 
                 Log.ReceiveStopped(_logger);
 
                 // Close JS side SSE
-                await CloseSSEAsync();
+                await CloseSSEAsync().ConfigureAwait(false);
             }
         }
 
         [JSInvokable]
         public void HandleSSEMessage(string msg)
         {
+            if (msg is null)
+                throw new ArgumentNullException(nameof(msg));
+
             _logger.LogDebug($"HandleSSEMessage \"{msg}\"");
 
             // Decode data
@@ -191,14 +201,16 @@ namespace AI4E.AspNetCore.Blazor.SignalR
             Log.MessageToApplication(_logger, data.Length);
 
             // Write to stream
-            var flushResult = _application.Output.WriteAsync(data).Result;
+            Debug.Assert(_application != null);
+            var flushResult = _application!.Output.WriteAsync(data).Result;
 
             // Handle cancel
             if (flushResult.IsCanceled || flushResult.IsCompleted)
             {
                 Log.EventStreamEnded(_logger);
 
-                _jsTask.SetCanceled();
+                Debug.Assert(_jsTask != null);
+                _jsTask!.SetCanceled();
             }
         }
 
@@ -206,7 +218,8 @@ namespace AI4E.AspNetCore.Blazor.SignalR
         public void HandleSSEError(string msg)
         {
             _logger.LogDebug($"HandleSSEError \"{msg}\"");
-            _jsTask.SetException(new Exception(msg));
+            Debug.Assert(_jsTask != null);
+            _jsTask!.SetException(new Exception(msg));
         }
 
         [JSInvokable]
@@ -226,18 +239,20 @@ namespace AI4E.AspNetCore.Blazor.SignalR
             }
 
             // Kill js side
-            _jsTask.SetCanceled();
-            await CloseSSEAsync();
+            Debug.Assert(_jsTask != null);
+            _jsTask!.SetCanceled();
+            await CloseSSEAsync().ConfigureAwait(false);
 
             // Cleanup managed side
-            _transport.Output.Complete();
-            _transport.Input.Complete();
+            Debug.Assert(_transport != null);
+            _transport!.Output.Complete();
+            _transport!.Input.Complete();
 
             _application.Input.CancelPendingRead();
 
             try
             {
-                await Running;
+                await Running.ConfigureAwait(false);
             }
             catch (Exception ex)
             {
@@ -255,7 +270,9 @@ namespace AI4E.AspNetCore.Blazor.SignalR
                 await _jsRuntime.InvokeAsync<object>(
                     "BlazorSignalR.ServerSentEventsTransport.CloseConnection", DotNetObjectReference.Create(this));
             }
+#pragma warning disable CA1031
             catch (Exception e)
+#pragma warning restore CA1031
             {
                 _logger.LogError($"Failed to stop SSE {e}");
             }
@@ -272,81 +289,108 @@ namespace AI4E.AspNetCore.Blazor.SignalR
 
         private static class Log
         {
-            private static readonly Action<ILogger, TransferFormat, Exception> _startTransport =
+            private static readonly Action<ILogger, TransferFormat, Exception?> StartTransportMessage =
                 LoggerMessage.Define<TransferFormat>(LogLevel.Information, new EventId(1, "StartTransport"),
                     "Starting transport. Transfer mode: {TransferFormat}.");
 
-            private static readonly Action<ILogger, Exception> _transportStopped =
+            private static readonly Action<ILogger, Exception?> TransportStoppedMessage =
                 LoggerMessage.Define(LogLevel.Debug, new EventId(2, "TransportStopped"), "Transport stopped.");
 
-            private static readonly Action<ILogger, Exception> _startReceive =
+            private static readonly Action<ILogger, Exception?> StartReceiveMessage =
                 LoggerMessage.Define(LogLevel.Debug, new EventId(3, "StartReceive"), "Starting receive loop.");
 
-            private static readonly Action<ILogger, Exception> _receiveStopped =
+            private static readonly Action<ILogger, Exception?> ReceiveStoppedMessage =
                 LoggerMessage.Define(LogLevel.Debug, new EventId(4, "ReceiveStopped"), "Receive loop stopped.");
 
-            private static readonly Action<ILogger, Exception> _receiveCanceled =
+            private static readonly Action<ILogger, Exception?> ReceiveCanceledMessage =
                 LoggerMessage.Define(LogLevel.Debug, new EventId(5, "ReceiveCanceled"), "Receive loop canceled.");
 
-            private static readonly Action<ILogger, Exception> _transportStopping =
+            private static readonly Action<ILogger, Exception?> TransportStoppingMessage =
                 LoggerMessage.Define(LogLevel.Information, new EventId(6, "TransportStopping"),
                     "Transport is stopping.");
 
-            private static readonly Action<ILogger, int, Exception> _messageToApplication =
+            private static readonly Action<ILogger, int, Exception?> MessageToApplicationMessage =
                 LoggerMessage.Define<int>(LogLevel.Debug, new EventId(7, "MessageToApplication"),
                     "Passing message to application. Payload size: {Count}.");
 
-            private static readonly Action<ILogger, Exception> _eventStreamEnded =
+            private static readonly Action<ILogger, Exception?> EventStreamEndedMessage =
                 LoggerMessage.Define(LogLevel.Debug, new EventId(8, "EventStreamEnded"),
                     "Server-Sent Event Stream ended.");
 
-            private static readonly Action<ILogger, long, Exception> _parsingSSE =
+            private static readonly Action<ILogger, long, Exception?> ParsingSSEMessage =
                 LoggerMessage.Define<long>(LogLevel.Debug, new EventId(9, "ParsingSSE"),
                     "Received {Count} bytes. Parsing SSE frame.");
 
-            public static void StartTransport(ILogger logger, TransferFormat transferFormat)
+            public static void StartTransport(ILogger? logger, TransferFormat transferFormat)
             {
-                _startTransport(logger, transferFormat, null);
+                if (logger is null)
+                    return;
+
+                StartTransportMessage(logger, transferFormat, null);
             }
 
-            public static void TransportStopped(ILogger logger, Exception exception)
+            public static void TransportStopped(ILogger? logger, Exception? exception)
             {
-                _transportStopped(logger, exception);
+                if (logger is null)
+                    return;
+
+                TransportStoppedMessage(logger, exception);
             }
 
-            public static void StartReceive(ILogger logger)
+            public static void StartReceive(ILogger? logger)
             {
-                _startReceive(logger, null);
+                if (logger is null)
+                    return;
+
+                StartReceiveMessage(logger, null);
             }
 
-            public static void TransportStopping(ILogger logger)
+            public static void TransportStopping(ILogger? logger)
             {
-                _transportStopping(logger, null);
+                if (logger is null)
+                    return;
+
+                TransportStoppingMessage(logger, null);
             }
 
-            public static void MessageToApplication(ILogger logger, int count)
+            public static void MessageToApplication(ILogger? logger, int count)
             {
-                _messageToApplication(logger, count, null);
+                if (logger is null)
+                    return;
+
+                MessageToApplicationMessage(logger, count, null);
             }
 
-            public static void ReceiveCanceled(ILogger logger)
+            public static void ReceiveCanceled(ILogger? logger)
             {
-                _receiveCanceled(logger, null);
+                if (logger is null)
+                    return;
+
+                ReceiveCanceledMessage(logger, null);
             }
 
-            public static void ReceiveStopped(ILogger logger)
+            public static void ReceiveStopped(ILogger? logger)
             {
-                _receiveStopped(logger, null);
+                if (logger is null)
+                    return;
+
+                ReceiveStoppedMessage(logger, null);
             }
 
-            public static void EventStreamEnded(ILogger logger)
+            public static void EventStreamEnded(ILogger? logger)
             {
-                _eventStreamEnded(logger, null);
+                if (logger is null)
+                    return;
+
+                EventStreamEndedMessage(logger, null);
             }
 
-            public static void ParsingSSE(ILogger logger, long bytes)
+            public static void ParsingSSE(ILogger? logger, long bytes)
             {
-                _parsingSSE(logger, bytes, null);
+                if (logger is null)
+                    return;
+
+                ParsingSSEMessage(logger, bytes, null);
             }
         }
     }

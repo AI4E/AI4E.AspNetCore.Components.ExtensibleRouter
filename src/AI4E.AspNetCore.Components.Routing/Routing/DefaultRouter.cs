@@ -37,6 +37,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Reflection;
 using Microsoft.AspNetCore.Components;
 
@@ -51,11 +52,14 @@ namespace AI4E.AspNetCore.Components.Routing
         /// Gets or sets the assembly that should be searched, along with its referenced
         /// assemblies, for components matching the URI.
         /// </summary>
-        [Parameter] public Assembly AppAssembly { get; set; }
+        [Parameter] public Assembly? AppAssembly { get; set; }
 
         /// <inheritdoc />
         protected override IEnumerable<Type> ResolveRoutableComponents()
         {
+            if (AppAssembly is null)
+                return Enumerable.Empty<Type>();
+
             return ComponentResolver.ResolveComponents(AppAssembly);
         }
     }

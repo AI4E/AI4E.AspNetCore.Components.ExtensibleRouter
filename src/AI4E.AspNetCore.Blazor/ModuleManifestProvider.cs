@@ -39,17 +39,19 @@ using Microsoft.Extensions.Logging;
 
 namespace AI4E.AspNetCore.Blazor
 {
+#pragma warning disable CA1812
     internal sealed class ModuleManifestProvider : IModuleManifestProvider
+#pragma warning restore CA1812
     {
         private readonly IModulePropertiesLookup _modulePropertiesLookup;
         private readonly IRemoteMessageDispatcher _messageDispatcher;
-        private readonly ILogger<ModuleManifestProvider> _logger;
+        private readonly ILogger<ModuleManifestProvider>? _logger;
         private readonly ConcurrentDictionary<ModuleIdentifier, BlazorModuleManifest> _cache;
 
         public ModuleManifestProvider(
             IModulePropertiesLookup modulePropertiesLookup,
             IRemoteMessageDispatcher messageDispatcher,
-            ILogger<ModuleManifestProvider> logger = null)
+            ILogger<ModuleManifestProvider>? logger = null)
         {
             if (modulePropertiesLookup == null)
                 throw new ArgumentNullException(nameof(modulePropertiesLookup));
@@ -64,20 +66,20 @@ namespace AI4E.AspNetCore.Blazor
             _cache = new ConcurrentDictionary<ModuleIdentifier, BlazorModuleManifest>();
         }
 
-        public ValueTask<BlazorModuleManifest> GetModuleManifestAsync(ModuleIdentifier module, bool bypassCache, CancellationToken cancellation)
+        public ValueTask<BlazorModuleManifest?> GetModuleManifestAsync(ModuleIdentifier module, bool bypassCache, CancellationToken cancellation)
         {
             _logger?.LogDebug($"Requesting manifest for module {module}.");
 
             if (!bypassCache && _cache.TryGetValue(module, out var result))
             {
                 _logger?.LogTrace($"Successfully loaded manifest for module {module} from cache.");
-                return new ValueTask<BlazorModuleManifest>(result);
+                return new ValueTask<BlazorModuleManifest?>(result);
             }
 
             return GetModuleManifestCoreAsync(module, cancellation);
         }
 
-        private async ValueTask<BlazorModuleManifest> GetModuleManifestCoreAsync(ModuleIdentifier module, CancellationToken cancellation)
+        private async ValueTask<BlazorModuleManifest?> GetModuleManifestCoreAsync(ModuleIdentifier module, CancellationToken cancellation)
         {
             var moduleProperties = await _modulePropertiesLookup.LookupAsync(module, cancellation);
 

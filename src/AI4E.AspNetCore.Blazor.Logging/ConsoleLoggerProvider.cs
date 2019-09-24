@@ -59,18 +59,18 @@ namespace AI4E.AspNetCore.Blazor.Logging
     [ProviderAlias("Console")]
     public sealed class ConsoleLoggerProvider : ILoggerProvider, ISupportExternalScope
     {
-        private readonly IOptionsMonitor<ConsoleLoggerOptions> _options;
+        private readonly IOptionsMonitor<ConsoleLoggerOptions>? _options;
         private readonly ConcurrentDictionary<string, ConsoleLogger> _loggers;
         private readonly IJSRuntime _jsRuntime;
-        private IDisposable _optionsReloadToken;
+        private IDisposable? _optionsReloadToken;
         private IExternalScopeProvider _scopeProvider = NullExternalScopeProvider.Instance;
 
         /// <summary>
         /// Creates a new instance of the <see cref="ConsoleLoggerProvider"/> type.
         /// </summary>
-        /// <param name="options">An <see cref="IOptionsMonitor{TOptions}"/> used to access the logger options.</param>
         /// <param name="jsRuntime">The <see cref="IJSRuntime"/> to invoke js functions.</param>
-        public ConsoleLoggerProvider(IOptionsMonitor<ConsoleLoggerOptions> options, IJSRuntime jsRuntime)
+        /// <param name="options">An <see cref="IOptionsMonitor{TOptions}"/> used to access the logger options.</param>
+        public ConsoleLoggerProvider(IJSRuntime jsRuntime, IOptionsMonitor<ConsoleLoggerOptions> options)
         {
             if (jsRuntime == null)
                 throw new ArgumentNullException(nameof(jsRuntime));
@@ -78,17 +78,17 @@ namespace AI4E.AspNetCore.Blazor.Logging
             _options = options;
             _jsRuntime = jsRuntime;
             _loggers = new ConcurrentDictionary<string, ConsoleLogger>();
-            ReloadLoggerOptions(options.CurrentValue);
+            ReloadLoggerOptions(options?.CurrentValue);
         }
 
-        private void ReloadLoggerOptions(ConsoleLoggerOptions options)
+        private void ReloadLoggerOptions(ConsoleLoggerOptions? options)
         {
             foreach (var logger in _loggers)
             {
                 logger.Value.Options = options;
             }
 
-            _optionsReloadToken = _options.OnChange(ReloadLoggerOptions);
+            _optionsReloadToken = _options?.OnChange(ReloadLoggerOptions);
         }
 
         /// <inheritdoc />
@@ -96,7 +96,7 @@ namespace AI4E.AspNetCore.Blazor.Logging
         {
             return _loggers.GetOrAdd(name, loggerName => new ConsoleLogger(name, (IJSInProcessRuntime)_jsRuntime)
             {
-                Options = _options.CurrentValue,
+                Options = _options?.CurrentValue,
                 ScopeProvider = _scopeProvider
             });
         }

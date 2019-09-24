@@ -49,7 +49,9 @@ using Microsoft.JSInterop;
 
 namespace AI4E.AspNetCore.Blazor.SignalR
 {
+#pragma warning disable CA1812
     internal class BlazorHttpConnectionFactory : IConnectionFactory
+#pragma warning restore CA1812
     {
         private readonly BlazorHttpConnectionOptions _options;
         private readonly IJSRuntime _jsRuntime;
@@ -104,7 +106,7 @@ namespace AI4E.AspNetCore.Blazor.SignalR
 
             try
             {
-                await connection.StartAsync();
+                await connection.StartAsync().ConfigureAwait(false);
                 return connection;
             }
             catch
@@ -118,10 +120,9 @@ namespace AI4E.AspNetCore.Blazor.SignalR
         internal static BlazorHttpConnectionOptions ShallowCopyHttpConnectionOptions(
             BlazorHttpConnectionOptions options)
         {
-            return new BlazorHttpConnectionOptions
+            var result = new BlazorHttpConnectionOptions
             {
                 HttpMessageHandlerFactory = options.HttpMessageHandlerFactory,
-                Headers = options.Headers,
                 //ClientCertificates = options.ClientCertificates,
                 //Cookies = options.Cookies,
                 Url = options.Url,
@@ -135,6 +136,12 @@ namespace AI4E.AspNetCore.Blazor.SignalR
                 DefaultTransferFormat = options.DefaultTransferFormat,
                 //WebSocketConfiguration = options.WebSocketConfiguration,
             };
+
+            result.Headers.Clear();
+            foreach (var kvp in options.Headers)
+                result.Headers.Add(kvp);
+
+            return result;
         }
     }
 }

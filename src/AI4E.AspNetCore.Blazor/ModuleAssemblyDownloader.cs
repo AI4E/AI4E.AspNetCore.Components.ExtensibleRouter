@@ -37,22 +37,23 @@ using System.Threading;
 using System.Threading.Tasks;
 using AI4E.Modularity;
 using AI4E.Modularity.Metadata;
-using AI4E.Utils;
 using Microsoft.Extensions.Logging;
 
 namespace AI4E.AspNetCore.Blazor
 {
+#pragma warning disable CA1812
     internal sealed class ModuleAssemblyDownloader : IModuleAssemblyDownloader
+#pragma warning restore CA1812
     {
         private readonly HttpClient _httpClient;
         private readonly IModulePropertiesLookup _modulePropertiesLookup;
-        private readonly ILogger<ModuleAssemblyDownloader> _logger;
+        private readonly ILogger<ModuleAssemblyDownloader>? _logger;
         private readonly ConcurrentDictionary<string, Assembly> _assemblies = new ConcurrentDictionary<string, Assembly>();
 
         public ModuleAssemblyDownloader(
             HttpClient httpClient,
             IModulePropertiesLookup modulePropertiesLookup,
-            ILogger<ModuleAssemblyDownloader> logger = null)
+            ILogger<ModuleAssemblyDownloader>? logger = null)
         {
             if (httpClient == null)
                 throw new ArgumentNullException(nameof(httpClient));
@@ -65,7 +66,7 @@ namespace AI4E.AspNetCore.Blazor
             _logger = logger;
         }
 
-        public Assembly GetAssembly(string assemblyName)
+        public Assembly? GetAssembly(string assemblyName)
         {
             if (!_assemblies.TryGetValue(assemblyName, out var assembly))
             {
@@ -75,7 +76,7 @@ namespace AI4E.AspNetCore.Blazor
             return assembly;
         }
 
-        public async ValueTask<Assembly> InstallAssemblyAsync(ModuleIdentifier module, string assemblyName, CancellationToken cancellation)
+        public async ValueTask<Assembly?> InstallAssemblyAsync(ModuleIdentifier module, string assemblyName, CancellationToken cancellation)
         {
             var result = GetAssembly(assemblyName);
             if (result != null)
@@ -101,7 +102,7 @@ namespace AI4E.AspNetCore.Blazor
 
                 try
                 {
-                    response = await _httpClient.GetAsync(assemblyUri, cancellation);
+                    response = await _httpClient.GetAsync(assemblyUri, cancellation).ConfigureAwait(false);
                 }
                 catch (Exception exc)
                 {
@@ -111,7 +112,7 @@ namespace AI4E.AspNetCore.Blazor
 
                 if (response.IsSuccessStatusCode)
                 {
-                    var assemblyBytes = await response.Content.ReadAsByteArrayAsync();
+                    var assemblyBytes = await response.Content.ReadAsByteArrayAsync().ConfigureAwait(false);
 
                     try
                     {

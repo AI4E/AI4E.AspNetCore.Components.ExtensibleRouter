@@ -33,8 +33,10 @@ using System.Threading.Tasks;
 
 namespace AI4E.AspNetCore.Blazor.Server
 {
+#pragma warning disable CA1812
     [MessageHandler]
     internal sealed class BlazorModuleManifestQueryHandler
+#pragma warning restore CA1812
     {
         private readonly IBlazorModuleManifestProvider _manifestProvider;
 
@@ -46,7 +48,13 @@ namespace AI4E.AspNetCore.Blazor.Server
             _manifestProvider = manifestProvider;
         }
 
-        public ValueTask<BlazorModuleManifest> HandleAsync(Query<BlazorModuleManifest> query, CancellationToken cancellation)
+
+        public ValueTask<BlazorModuleManifest> HandleAsync(
+#pragma warning disable IDE0060, CA1801
+            Query<BlazorModuleManifest> query,
+#pragma warning restore IDE0060, CA1801
+            CancellationToken cancellation)
+
         {
             return _manifestProvider.GetBlazorModuleManifestAsync(cancellation);
         }

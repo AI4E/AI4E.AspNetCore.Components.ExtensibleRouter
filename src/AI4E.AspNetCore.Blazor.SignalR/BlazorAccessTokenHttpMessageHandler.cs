@@ -58,12 +58,12 @@ namespace AI4E.AspNetCore.Blazor.SignalR
 
         protected override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
         {
-            var accessTokenAsync = await _httpConnection.GetAccessTokenAsync();
+            var accessTokenAsync = await _httpConnection.GetAccessTokenAsync().ConfigureAwait(false);
 
             if (!string.IsNullOrEmpty(accessTokenAsync))
                 request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", accessTokenAsync);
 
-            return await base.SendAsync(request, cancellationToken);
+            return await base.SendAsync(request, cancellationToken).ConfigureAwait(false);
         }
     }
 }

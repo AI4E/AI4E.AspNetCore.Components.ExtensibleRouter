@@ -92,7 +92,7 @@ namespace AI4E.AspNetCore.Components.Forms
         /// <summary>
         /// Fires when <see cref="FormExtensions"/> changed.
         /// </summary>
-        public event EventHandler<FormExtensionsChangedEventArgs> OnFormExtensionsChanged;
+        public event EventHandler<FormExtensionsChangedEventArgs>? OnFormExtensionsChanged;
 
         /// <summary>
         /// Registeres a form extension and returns a handle for the extension.

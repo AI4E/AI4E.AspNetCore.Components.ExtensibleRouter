@@ -36,6 +36,7 @@
  */
 
 using System;
+using System.Diagnostics;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.Forms;
@@ -49,7 +50,7 @@ namespace AI4E.AspNetCore.Components.Forms
     public class ExtensibleEditForm : ExtensibleEditFormBase
     {
         private readonly Func<Task> _handleSubmitDelegate; // Cache to avoid per-render allocations
-        private ExtensibleEditContext _extensibleEditContext;
+        private ExtensibleEditContext? _extensibleEditContext;
 
         /// <summary>
         /// Creates a new instance of the <see cref="ExtensibleEditForm"/> component.
@@ -91,7 +92,8 @@ namespace AI4E.AspNetCore.Components.Forms
 #pragma warning disable CA2007
         private async Task HandleSubmitAsync()
         {
-            var isValid = _extensibleEditContext.Validate();
+            Debug.Assert(_extensibleEditContext != null);
+            var isValid = _extensibleEditContext!.Validate();
 
             if (isValid)
             {
@@ -122,15 +124,17 @@ namespace AI4E.AspNetCore.Components.Forms
             if (builder is null)
                 throw new ArgumentNullException(nameof(builder));
 
+            Debug.Assert(_extensibleEditContext != null);
+
             var sequence = 0;
-            var editContext = _extensibleEditContext.RootEditContext;
+            var editContext = _extensibleEditContext!.RootEditContext;
 
             void BuildEditContextCascadingValue(RenderTreeBuilder builder)
             {
                 builder.OpenComponent<CascadingValue<EditContext>>(sequence++);
                 builder.AddAttribute(sequence++, nameof(CascadingValue<EditContext>.IsFixed), true);
                 builder.AddAttribute(sequence++, nameof(CascadingValue<EditContext>.Value), editContext);
-                builder.AddAttribute(sequence++, nameof(CascadingValue<EditContext>.ChildContent), ChildContent?.Invoke(_extensibleEditContext));
+                builder.AddAttribute(sequence++, nameof(CascadingValue<EditContext>.ChildContent), ChildContent?.Invoke(_extensibleEditContext!));
                 builder.CloseComponent();
             }
 

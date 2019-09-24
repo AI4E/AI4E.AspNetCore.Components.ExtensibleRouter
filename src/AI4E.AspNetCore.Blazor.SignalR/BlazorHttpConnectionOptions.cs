@@ -48,11 +48,9 @@ namespace AI4E.AspNetCore.Blazor.SignalR
 {
     public class BlazorHttpConnectionOptions
     {
-        private IDictionary<string, string> _headers;
-
         public BlazorHttpConnectionOptions()
         {
-            _headers = new Dictionary<string, string>();
+            Headers = new Dictionary<string, string>();
             Transports = HttpTransports.All;
             Implementations = BlazorTransportType.JsWebSockets | BlazorTransportType.ManagedWebSockets |
                               BlazorTransportType.JsServerSentEvents | BlazorTransportType.ManagedServerSentEvents |
@@ -64,23 +62,15 @@ namespace AI4E.AspNetCore.Blazor.SignalR
         /// <see cref="P:Microsoft.AspNetCore.Http.Connections.Client.HttpConnectionOptions.HttpMessageHandlerFactory" />
         /// that will make HTTP requests.
         /// </summary>
-        public Func<HttpMessageHandler, HttpMessageHandler> HttpMessageHandlerFactory { get; set; }
+        public Func<HttpMessageHandler, HttpMessageHandler>? HttpMessageHandlerFactory { get; set; }
 
         /// <summary>
         /// Gets or sets a collection of headers that will be sent with HTTP requests.
         /// </summary>
-        public IDictionary<string, string> Headers
-        {
-            get => _headers;
-            set
-            {
-                var dictionary = value;
-                _headers = dictionary ?? throw new ArgumentNullException(nameof(value));
-            }
-        }
+        public IDictionary<string, string> Headers { get; private set; }
 
         /// <summary>Gets or sets the URL used to send HTTP requests.</summary>
-        public Uri Url { get; set; }
+        public Uri? Url { get; set; }
 
         /// <summary>
         /// Gets or sets a bitmask comprised of one or more <see cref="T:Microsoft.AspNetCore.Http.Connections.HttpTransportType" />
@@ -105,7 +95,7 @@ namespace AI4E.AspNetCore.Blazor.SignalR
         /// <summary>
         /// Gets or sets an access token provider that will be called to return a token for each HTTP request.
         /// </summary>
-        public Func<Task<string>> AccessTokenProvider { get; set; }
+        public Func<Task<string?>>? AccessTokenProvider { get; set; }
 
         /// <summary>
         /// Gets or sets the default <see cref="TransferFormat" /> to use if <see cref="HttpConnection.StartAsync(CancellationToken)"/>

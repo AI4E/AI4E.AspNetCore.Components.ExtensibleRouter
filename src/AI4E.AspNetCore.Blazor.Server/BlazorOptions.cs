@@ -52,6 +52,6 @@ namespace AI4E.AspNetCore.Blazor.Server
         /// <summary>
         /// Full path to the client assembly.
         /// </summary>
-        public string ClientAssemblyPath { get; set; }
+        public string? ClientAssemblyPath { get; set; }
     }
 }

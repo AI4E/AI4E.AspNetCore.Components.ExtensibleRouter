@@ -36,8 +36,8 @@ namespace AI4E.AspNetCore.Blazor
 {
     internal interface IModuleAssemblyDownloader
     {
-        Assembly GetAssembly(string assemblyName);
+        Assembly? GetAssembly(string assemblyName);
 
-        ValueTask<Assembly> InstallAssemblyAsync(ModuleIdentifier module, string assemblyName, CancellationToken cancellation);
+        ValueTask<Assembly?> InstallAssemblyAsync(ModuleIdentifier module, string assemblyName, CancellationToken cancellation);
     }
 }

@@ -36,6 +36,7 @@
 */
 
 using System;
+using System.Diagnostics;
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.Forms;
 using Microsoft.AspNetCore.Components.Rendering;
@@ -47,13 +48,13 @@ namespace AI4E.AspNetCore.Components.Forms
     /// </summary>
     public class EditFormExtension : ExtensibleEditFormBase, IDisposable
     {
-        private EditContext _fixedEditContext;
+        private EditContext? _fixedEditContext;
         private FormExtension? _registration;
 
         /// <summary>
         /// Gets or sets the cascading extendible edit context.
         /// </summary>
-        [CascadingParameter] public ExtensibleEditContext ExtensibleEditContext { get; set; }
+        [CascadingParameter] public ExtensibleEditContext? ExtensibleEditContext { get; set; }
 
         /// <inheritdoc />
         protected override void OnParametersSet()
@@ -102,7 +103,7 @@ namespace AI4E.AspNetCore.Components.Forms
         {
             if (_registration != null)
             {
-                ExtensibleEditContext.UnregisterEditFormExtension(_registration.Value);
+                ExtensibleEditContext?.UnregisterEditFormExtension(_registration.Value);
             }
         }
 
@@ -114,19 +115,22 @@ namespace AI4E.AspNetCore.Components.Forms
 
             var sequence = 0;
 
+            Debug.Assert(ExtensibleEditContext != null);
+            Debug.Assert(_fixedEditContext != null);
+
             void BuildEditContextCascadingValue(RenderTreeBuilder builder)
             {
                 builder.OpenComponent<CascadingValue<EditContext>>(sequence++);
                 builder.AddAttribute(sequence++, nameof(CascadingValue<EditContext>.IsFixed), true);
                 builder.AddAttribute(sequence++, nameof(CascadingValue<EditContext>.Value), _fixedEditContext);
-                builder.AddAttribute(sequence++, nameof(CascadingValue<EditContext>.ChildContent), ChildContent?.Invoke(ExtensibleEditContext));
+                builder.AddAttribute(sequence++, nameof(CascadingValue<EditContext>.ChildContent), ChildContent?.Invoke(ExtensibleEditContext!));
                 builder.CloseComponent();
             }
 
             // If _fixedEditContext changes, tear down and recreate all descendants.
             // This is so we can safely use the IsFixed optimization on CascadingValue,
             // optimizing for the common case where _fixedEditContext never changes.
-            builder.OpenRegion(_fixedEditContext.GetHashCode());
+            builder.OpenRegion(_fixedEditContext!.GetHashCode());
 
             builder.OpenElement(sequence++, "div");
             builder.AddMultipleAttributes(sequence++, AdditionalAttributes);

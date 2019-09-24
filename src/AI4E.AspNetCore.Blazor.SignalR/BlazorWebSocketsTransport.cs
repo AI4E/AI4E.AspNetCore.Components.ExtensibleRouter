@@ -39,51 +39,51 @@
 
 using System;
 using System.Buffers;
+using System.Diagnostics;
 using System.IO.Pipelines;
 using System.Net.WebSockets;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Connections;
 using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.JSInterop;
 
 namespace AI4E.AspNetCore.Blazor.SignalR
 {
     public class BlazorWebSocketsTransport : IDuplexPipe
     {
-        private IDuplexPipe _application;
-        private readonly ILogger _logger;
+        private IDuplexPipe? _application;
+        private readonly ILogger? _logger;
         private readonly IJSRuntime _jsRuntime;
         private volatile bool _aborted;
 
-        private IDuplexPipe _transport;
+        private IDuplexPipe? _transport;
 
+#pragma warning disable CA1822
         public string InternalWebSocketId { [JSInvokable] get; }
-
-        public string WebSocketAccessToken { [JSInvokable] get; }
+        public string? WebSocketAccessToken { [JSInvokable] get; }
+#pragma warning restore CA1822
 
         internal Task Running { get; private set; } = Task.CompletedTask;
 
-        public PipeReader Input => _transport.Input;
+        public PipeReader? Input => _transport?.Input;
+        public PipeWriter? Output => _transport?.Output;
 
-        public PipeWriter Output => _transport.Output;
+        private TaskCompletionSource<object?>? _startTask;
+        private TaskCompletionSource<object?>? _receiveTask;
 
-        private TaskCompletionSource<object> _startTask;
-        private TaskCompletionSource<object> _receiveTask;
-
-        public BlazorWebSocketsTransport(string token, IJSRuntime jsRuntime, ILoggerFactory loggerFactory)
+        public BlazorWebSocketsTransport(string? token, IJSRuntime jsRuntime, ILoggerFactory? loggerFactory)
         {
             if (jsRuntime == null)
                 throw new ArgumentNullException(nameof(jsRuntime));
 
-            _logger = (loggerFactory ?? NullLoggerFactory.Instance).CreateLogger<BlazorWebSocketsTransport>();
+            _logger = loggerFactory?.CreateLogger<BlazorWebSocketsTransport>();
             InternalWebSocketId = Guid.NewGuid().ToString();
             WebSocketAccessToken = token;
             _jsRuntime = jsRuntime;
         }
 
-        public async Task StartAsync(Uri url, TransferFormat transferFormat, CancellationToken cancellationToken)
+        public async Task StartAsync(Uri url, TransferFormat transferFormat)
         {
             if (url == null)
             {
@@ -101,12 +101,12 @@ namespace AI4E.AspNetCore.Blazor.SignalR
             Log.StartTransport(_logger, transferFormat);
 
             // Create connection
-            _startTask = new TaskCompletionSource<object>();
+            _startTask = new TaskCompletionSource<object?>();
             await _jsRuntime.InvokeAsync<object>(
                 "BlazorSignalR.WebSocketsTransport.CreateConnection", url.ToString(),
                 transferFormat == TransferFormat.Binary, DotNetObjectReference.Create(this));
 
-            await _startTask.Task;
+            await _startTask.Task.ConfigureAwait(false);
             _startTask = null;
 
             Log.StartedTransport(_logger);
@@ -128,7 +128,7 @@ namespace AI4E.AspNetCore.Blazor.SignalR
             var sending = StartSending();
 
             // Wait for send or receive to complete
-            var trigger = await Task.WhenAny(receiving, sending);
+            var trigger = await Task.WhenAny(receiving, sending).ConfigureAwait(false);
 
             if (trigger == receiving)
             {
@@ -137,19 +137,21 @@ namespace AI4E.AspNetCore.Blazor.SignalR
                 // 2. Waiting for a websocket send to complete
 
                 // Cancel the application so that ReadAsync yields
-                _application.Input.CancelPendingRead();
+                Debug.Assert(_application != null);
+                _application!.Input.CancelPendingRead();
 
                 using var delayCts = new CancellationTokenSource();
                 var resultTask = await Task.WhenAny(
-                    sending, Task.Delay(TimeSpan.FromSeconds(5.0), delayCts.Token));
+                    sending, Task.Delay(TimeSpan.FromSeconds(5.0), delayCts.Token)).ConfigureAwait(false);
 
                 if (resultTask != sending)
                 {
                     _aborted = true;
 
                     // Abort the websocket if we're stuck in a pending send to the client
-                    _receiveTask.SetCanceled();
-                    await CloseWebSocketAsync();
+                    Debug.Assert(_receiveTask != null);
+                    _receiveTask!.SetCanceled();
+                    await CloseWebSocketAsync().ConfigureAwait(false);
                 }
                 else
                 {
@@ -166,11 +168,13 @@ namespace AI4E.AspNetCore.Blazor.SignalR
                 _aborted = true;
 
                 // Abort the websocket if we're stuck in a pending receive from the client
-                _receiveTask.SetCanceled();
-                await CloseWebSocketAsync();
+                Debug.Assert(_receiveTask != null);
+                _receiveTask!.SetCanceled();
+                await CloseWebSocketAsync().ConfigureAwait(false);
 
                 // Cancel any pending flush so that we can quit
-                _application.Output.CancelPendingFlush();
+                Debug.Assert(_application != null);
+                _application!.Output.CancelPendingFlush();
             }
         }
 
@@ -178,11 +182,11 @@ namespace AI4E.AspNetCore.Blazor.SignalR
         {
             try
             {
-                var task = new TaskCompletionSource<object>();
+                var task = new TaskCompletionSource<object?>();
                 _receiveTask = task;
 
                 // Wait until js side stops
-                await task.Task;
+                await task.Task.ConfigureAwait(false);
             }
             catch (OperationCanceledException)
             {
@@ -192,7 +196,8 @@ namespace AI4E.AspNetCore.Blazor.SignalR
             {
                 if (!_aborted)
                 {
-                    _application.Output.Complete(ex);
+                    Debug.Assert(_application != null);
+                    _application!.Output.Complete(ex);
 
                     // We re-throw here so we can communicate that there was an error when sending
                     // the close frame
@@ -202,7 +207,8 @@ namespace AI4E.AspNetCore.Blazor.SignalR
             finally
             {
                 // We're done writing
-                _application.Output.Complete();
+                Debug.Assert(_application != null);
+                _application!.Output.Complete();
 
                 Log.ReceiveStopped(_logger);
             }
@@ -218,6 +224,9 @@ namespace AI4E.AspNetCore.Blazor.SignalR
 
             Log.MessageReceived(_logger, data.Length);
 
+            if (_application is null || _receiveTask is null)
+                return;
+
             // Write to stream
             var flushResult = _application.Output.WriteAsync(data).Result;
 
@@ -230,13 +239,14 @@ namespace AI4E.AspNetCore.Blazor.SignalR
 
         private async Task StartSending()
         {
-            Exception error = null; // TODO: What is done with the error finally?
+            Exception? error; // TODO: What is done with the error finally?
 
             try
             {
                 while (true)
                 {
-                    var result = await _application.Input.ReadAsync();
+                    Debug.Assert(_application != null);
+                    var result = await _application!.Input.ReadAsync();
                     var buffer = result.Buffer;
 
                     // Get a frame from the application
@@ -261,7 +271,9 @@ namespace AI4E.AspNetCore.Blazor.SignalR
                                 await _jsRuntime.InvokeAsync<object>(
                                     "BlazorSignalR.WebSocketsTransport.Send", data, DotNetObjectReference.Create(this));
                             }
+#pragma warning disable CA1031
                             catch (Exception ex)
+#pragma warning restore CA1031
                             {
                                 if (!_aborted)
                                 {
@@ -282,15 +294,18 @@ namespace AI4E.AspNetCore.Blazor.SignalR
                     }
                 }
             }
+#pragma warning disable CA1031
             catch (Exception ex)
+#pragma warning restore CA1031
             {
                 error = ex;
             }
             finally
             {
-                await CloseWebSocketAsync();
+                await CloseWebSocketAsync().ConfigureAwait(false);
 
-                _application.Input.Complete();
+                Debug.Assert(_application != null);
+                _application!.Input.Complete();
 
                 Log.SendStopped(_logger);
             }
@@ -310,19 +325,22 @@ namespace AI4E.AspNetCore.Blazor.SignalR
             // Kill js side
             _startTask?.SetCanceled();
             _receiveTask?.SetCanceled();
-            await CloseWebSocketAsync();
+            await CloseWebSocketAsync().ConfigureAwait(false);
 
-            _transport.Output.Complete();
-            _transport.Input.Complete();
+            Debug.Assert(_transport != null);
+            _transport!.Output.Complete();
+            _transport!.Input.Complete();
 
             // Cancel any pending reads from the application, this should start the entire shutdown process
             _application.Input.CancelPendingRead();
 
             try
             {
-                await Running;
+                await Running.ConfigureAwait(false);
             }
+#pragma warning disable CA1031
             catch (Exception ex)
+#pragma warning restore CA1031
             {
                 Log.TransportStopped(_logger, ex);
                 // exceptions have been handled in the Running task continuation by closing the channel with the exception
@@ -340,7 +358,9 @@ namespace AI4E.AspNetCore.Blazor.SignalR
                 await _jsRuntime.InvokeAsync<object>(
                     "BlazorSignalR.WebSocketsTransport.CloseConnection", DotNetObjectReference.Create(this));
             }
+#pragma warning disable CA1031
             catch (Exception e)
+#pragma warning restore CA1031
             {
                 Log.ClosingWebSocketFailed(_logger, e);
             }
@@ -358,7 +378,7 @@ namespace AI4E.AspNetCore.Blazor.SignalR
         public void HandleWebSocketOpened()
         {
             _logger.LogDebug("HandleWebSocketOpened");
-            _startTask.SetResult(null);
+            _startTask?.SetResult(null);
         }
 
         [JSInvokable]
@@ -380,167 +400,224 @@ namespace AI4E.AspNetCore.Blazor.SignalR
 
         private static class Log
         {
-            private static readonly Action<ILogger, TransferFormat, Exception> _startTransport =
+            private static readonly Action<ILogger, TransferFormat, Exception?> StartTransportMessage =
                 LoggerMessage.Define<TransferFormat>(LogLevel.Information, new EventId(1, "StartTransport"),
                     "Starting transport. Transfer mode: {TransferFormat}. ");
 
-            private static readonly Action<ILogger, Exception> _transportStopped =
+            private static readonly Action<ILogger, Exception?> TransportStoppedMessage =
                 LoggerMessage.Define(LogLevel.Debug, new EventId(2, "TransportStopped"), "Transport stopped.");
 
-            private static readonly Action<ILogger, Exception> _startReceive =
+            private static readonly Action<ILogger, Exception?> StartReceiveMessage =
                 LoggerMessage.Define(LogLevel.Debug, new EventId(3, "StartReceive"), "Starting receive loop.");
 
-            private static readonly Action<ILogger, Exception> _receiveStopped =
+            private static readonly Action<ILogger, Exception?> ReceiveStoppedMessage =
                 LoggerMessage.Define(LogLevel.Debug, new EventId(4, "ReceiveStopped"), "Receive loop stopped.");
 
-            private static readonly Action<ILogger, Exception> _receiveCanceled =
+            private static readonly Action<ILogger, Exception?> ReceiveCanceledMessage =
                 LoggerMessage.Define(LogLevel.Debug, new EventId(5, "ReceiveCanceled"), "Receive loop canceled.");
 
-            private static readonly Action<ILogger, Exception> _transportStopping =
+            private static readonly Action<ILogger, Exception?> TransportStoppingMessage =
                 LoggerMessage.Define(LogLevel.Information, new EventId(6, "TransportStopping"),
                     "Transport is stopping.");
 
-            private static readonly Action<ILogger, Exception> _sendStarted =
+            private static readonly Action<ILogger, Exception?> SendStartedMessage =
                 LoggerMessage.Define(LogLevel.Debug, new EventId(7, "SendStarted"), "Starting the send loop.");
 
-            private static readonly Action<ILogger, Exception> _sendStopped =
+            private static readonly Action<ILogger, Exception?> SendStoppedMessage =
                 LoggerMessage.Define(LogLevel.Debug, new EventId(8, "SendStopped"), "Send loop stopped.");
 
-            private static readonly Action<ILogger, Exception> _sendCanceled =
+            private static readonly Action<ILogger, Exception?> SendCanceledMessage =
                 LoggerMessage.Define(LogLevel.Debug, new EventId(9, "SendCanceled"), "Send loop canceled.");
 
-            private static readonly Action<ILogger, int, Exception> _messageToApp =
+            private static readonly Action<ILogger, int, Exception?> MessageToAppMessage =
                 LoggerMessage.Define<int>(LogLevel.Debug, new EventId(10, "MessageToApp"),
                     "Passing message to application. Payload size: {Count}.");
 
-            private static readonly Action<ILogger, WebSocketCloseStatus?, Exception> _webSocketClosed =
+            private static readonly Action<ILogger, WebSocketCloseStatus?, Exception?> WebSocketClosedMessage =
                 LoggerMessage.Define<WebSocketCloseStatus?>(LogLevel.Information, new EventId(11, "WebSocketClosed"),
                     "WebSocket closed by the server. Close status {CloseStatus}.");
 
-            private static readonly Action<ILogger, int, Exception> _messageReceived =
+            private static readonly Action<ILogger, int, Exception?> MessageReceivedMessage =
                 LoggerMessage.Define<int>(LogLevel.Debug,
                     new EventId(12, "MessageReceived"),
                     "Message received.  size: {Count}.");
 
-            private static readonly Action<ILogger, long, Exception> _receivedFromApp =
+            private static readonly Action<ILogger, long, Exception?> ReceivedFromAppMessage =
                 LoggerMessage.Define<long>(LogLevel.Debug, new EventId(13, "ReceivedFromApp"),
                     "Received message from application. Payload size: {Count}.");
 
-            private static readonly Action<ILogger, Exception> _sendMessageCanceled =
+            private static readonly Action<ILogger, Exception?> SendMessageCanceledMessage =
                 LoggerMessage.Define(LogLevel.Information, new EventId(14, "SendMessageCanceled"),
                     "Sending a message canceled.");
 
-            private static readonly Action<ILogger, Exception> _errorSendingMessage =
+            private static readonly Action<ILogger, Exception?> ErrorSendingMessageMessage =
                 LoggerMessage.Define(LogLevel.Error, new EventId(15, "ErrorSendingMessage"),
                     "Error while sending a message.");
 
-            private static readonly Action<ILogger, Exception> _closingWebSocket =
+            private static readonly Action<ILogger, Exception?> ClosingWebSocketMessage =
                 LoggerMessage.Define(LogLevel.Information, new EventId(16, "ClosingWebSocket"), "Closing WebSocket.");
 
-            private static readonly Action<ILogger, Exception> _closingWebSocketFailed =
+            private static readonly Action<ILogger, Exception?> ClosingWebSocketFailedMessage =
                 LoggerMessage.Define(LogLevel.Information, new EventId(17, "ClosingWebSocketFailed"),
                     "Closing webSocket failed.");
 
-            private static readonly Action<ILogger, Exception> _cancelMessage =
+            private static readonly Action<ILogger, Exception?> CancelMessageMessage =
                 LoggerMessage.Define(LogLevel.Debug, new EventId(18, "CancelMessage"),
                     "Canceled passing message to application.");
 
-            private static readonly Action<ILogger, Exception> _startedTransport =
+            private static readonly Action<ILogger, Exception?> StartedTransportMessage =
                 LoggerMessage.Define(LogLevel.Debug, new EventId(19, "StartedTransport"), "Started transport.");
 
-            public static void StartTransport(ILogger logger, TransferFormat transferFormat)
+            public static void StartTransport(ILogger? logger, TransferFormat transferFormat)
             {
-                _startTransport(logger, transferFormat, null);
+                if (logger is null)
+                    return;
+
+                StartTransportMessage(logger, transferFormat, null);
             }
 
-            public static void TransportStopped(ILogger logger, Exception exception)
+            public static void TransportStopped(ILogger? logger, Exception? exception)
             {
-                _transportStopped(logger, exception);
+                if (logger is null)
+                    return;
+
+                TransportStoppedMessage(logger, exception);
             }
 
-            public static void StartReceive(ILogger logger)
+            public static void StartReceive(ILogger? logger)
             {
-                _startReceive(logger, null);
+                if (logger is null)
+                    return;
+
+                StartReceiveMessage(logger, null);
             }
 
-            public static void TransportStopping(ILogger logger)
+            public static void TransportStopping(ILogger? logger)
             {
-                _transportStopping(logger, null);
+                if (logger is null)
+                    return;
+
+                TransportStoppingMessage(logger, null);
             }
 
-            public static void MessageToApp(ILogger logger, int count)
+            public static void MessageToApp(ILogger? logger, int count)
             {
-                _messageToApp(logger, count, null);
+                if (logger is null)
+                    return;
+
+                MessageToAppMessage(logger, count, null);
             }
 
-            public static void ReceiveCanceled(ILogger logger)
+            public static void ReceiveCanceled(ILogger? logger)
             {
-                _receiveCanceled(logger, null);
+                if (logger is null)
+                    return;
+
+                ReceiveCanceledMessage(logger, null);
             }
 
-            public static void ReceiveStopped(ILogger logger)
+            public static void ReceiveStopped(ILogger? logger)
             {
-                _receiveStopped(logger, null);
+                if (logger is null)
+                    return;
+
+                ReceiveStoppedMessage(logger, null);
             }
 
-            public static void SendStarted(ILogger logger)
+            public static void SendStarted(ILogger? logger)
             {
-                _sendStarted(logger, null);
+                if (logger is null)
+                    return;
+
+                SendStartedMessage(logger, null);
             }
 
-            public static void SendCanceled(ILogger logger)
+            public static void SendCanceled(ILogger? logger)
             {
-                _sendCanceled(logger, null);
+                if (logger is null)
+                    return;
+
+                SendCanceledMessage(logger, null);
             }
 
-            public static void SendStopped(ILogger logger)
+            public static void SendStopped(ILogger? logger)
             {
-                _sendStopped(logger, null);
+                if (logger is null)
+                    return;
+
+                SendStoppedMessage(logger, null);
             }
 
-            public static void WebSocketClosed(ILogger logger, WebSocketCloseStatus? closeStatus)
+            public static void WebSocketClosed(ILogger? logger, WebSocketCloseStatus? closeStatus)
             {
-                _webSocketClosed(logger, closeStatus, null);
+                if (logger is null)
+                    return;
+
+                WebSocketClosedMessage(logger, closeStatus, null);
             }
 
-            public static void MessageReceived(ILogger logger, int count)
+            public static void MessageReceived(ILogger? logger, int count)
             {
-                _messageReceived(logger, count, null);
+                if (logger is null)
+                    return;
+
+                MessageReceivedMessage(logger, count, null);
             }
 
-            public static void ReceivedFromApp(ILogger logger, long count)
+            public static void ReceivedFromApp(ILogger? logger, long count)
             {
-                _receivedFromApp(logger, count, null);
+                if (logger is null)
+                    return;
+
+                ReceivedFromAppMessage(logger, count, null);
             }
 
-            public static void SendMessageCanceled(ILogger logger)
+            public static void SendMessageCanceled(ILogger? logger)
             {
-                _sendMessageCanceled(logger, null);
+                if (logger is null)
+                    return;
+
+                SendMessageCanceledMessage(logger, null);
             }
 
-            public static void ErrorSendingMessage(ILogger logger, Exception exception)
+            public static void ErrorSendingMessage(ILogger? logger, Exception? exception)
             {
-                _errorSendingMessage(logger, exception);
+                if (logger is null)
+                    return;
+
+                ErrorSendingMessageMessage(logger, exception);
             }
 
-            public static void ClosingWebSocket(ILogger logger)
+            public static void ClosingWebSocket(ILogger? logger)
             {
-                _closingWebSocket(logger, null);
+                if (logger is null)
+                    return;
+
+                ClosingWebSocketMessage(logger, null);
             }
 
-            public static void ClosingWebSocketFailed(ILogger logger, Exception exception)
+            public static void ClosingWebSocketFailed(ILogger? logger, Exception exception)
             {
-                _closingWebSocketFailed(logger, exception);
+                if (logger is null)
+                    return;
+
+                ClosingWebSocketFailedMessage(logger, exception);
             }
 
-            public static void CancelMessage(ILogger logger)
+            public static void CancelMessage(ILogger? logger)
             {
-                _cancelMessage(logger, null);
+                if (logger is null)
+                    return;
+
+                CancelMessageMessage(logger, null);
             }
 
-            public static void StartedTransport(ILogger logger)
+            public static void StartedTransport(ILogger? logger)
             {
-                _startedTransport(logger, null);
+                if (logger is null)
+                    return;
+
+                StartedTransportMessage(logger, null);
             }
         }
     }

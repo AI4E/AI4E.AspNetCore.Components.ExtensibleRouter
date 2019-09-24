@@ -30,7 +30,6 @@
 using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
-using System.Diagnostics.CodeAnalysis;
 using System.Threading.Tasks;
 using AI4E.Utils;
 
@@ -59,11 +58,6 @@ namespace AI4E.AspNetCore.Components.Notifications
             NotificationsChanged?.Invoke(this, EventArgs.Empty);
         }
 
-#pragma warning disable CA1721
-        /// <inheritdoc />
-        public IEnumerable<Notification> Notifications => GetNotificationsInternal(key: null, uri: null);
-#pragma warning restore CA1721
-
         /// <inheritdoc />
         public void Dismiss(Notification notification)
         {
@@ -79,6 +73,12 @@ namespace AI4E.AspNetCore.Components.Notifications
             }
 
             OnNotificationsChanged();
+        }
+
+        /// <inheritdoc />
+        public IEnumerable<Notification> GetNotifications()
+        {
+            return GetNotificationsInternal(key: null, uri: null);
         }
 
         /// <inheritdoc />
@@ -102,6 +102,17 @@ namespace AI4E.AspNetCore.Components.Notifications
             return GetNotificationsInternal(key, uri);
         }
 
+        public IEnumerable<Notification> GetNotifications(string key, Uri uri)
+        {
+            if (key is null)
+                throw new ArgumentNullException(nameof(key));
+
+            if (uri is null)
+                throw new ArgumentNullException(nameof(uri));
+
+            return GetNotificationsInternal(key, uri.ToString());
+        }
+
         private IEnumerable<Notification> GetNotificationsInternal(string? key, string? uri)
         {
             lock (_mutex)
@@ -122,7 +133,9 @@ namespace AI4E.AspNetCore.Components.Notifications
 
                 for (var current = _notificationMessages.Last; current != null; current = current.Previous)
                 {
+#pragma warning disable CA2234
                     if (uri != null && !current.Value.UriFilter.IsMatch(uri))
+#pragma warning restore CA2234
                     {
                         continue;
                     }

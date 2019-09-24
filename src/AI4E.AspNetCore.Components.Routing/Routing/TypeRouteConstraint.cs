@@ -1,4 +1,4 @@
-﻿/* License
+/* License
  * --------------------------------------------------------------------------------------------------------------------
  * This file is part of the AI4E distribution.
  *   (https://github.com/AI4E/AI4E.AspNetCore.Components.Extensions)
@@ -52,7 +52,7 @@ namespace AI4E.AspNetCore.Components.Routing
             _parser = parser;
         }
 
-        public override bool Match(string pathSegment, out object convertedValue)
+        public override bool Match(string pathSegment, out object? convertedValue)
         {
             if (_parser(pathSegment, out var result))
             {

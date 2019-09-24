@@ -62,6 +62,21 @@ namespace AI4E.AspNetCore.Components.Notifications
             _exactMatch = exactMatch;
         }
 
+        public UriFilter(Uri uri, bool exactMatch = false)
+        {
+            if (uri == null)
+                throw new ArgumentNullException(nameof(uri));
+
+            _uri = uri.ToString();
+
+            if (!_uri.StartsWith("/", StringComparison.OrdinalIgnoreCase))
+            {
+                _uri = "/" + _uri;
+            }
+
+            _exactMatch = exactMatch;
+        }
+
         /// <summary>
         /// Returns a boolean value indicating whether the specified uri filter matches the current one.
         /// </summary>
@@ -78,7 +93,7 @@ namespace AI4E.AspNetCore.Components.Notifications
         /// </summary>
         /// <param name="obj">The <see cref="object"/> to compare with.</param>
         /// <returns>True if <paramref name="obj"/> is of type <see cref="UriFilter"/> and equals the current uri filter, false otherwise.</returns>
-        public override bool Equals(object obj)
+        public override bool Equals(object? obj)
         {
             return obj is UriFilter uriFilter && Equals(uriFilter);
         }
@@ -112,6 +127,16 @@ namespace AI4E.AspNetCore.Components.Notifications
         public static bool operator !=(in UriFilter left, in UriFilter right)
         {
             return !left.Equals(right);
+        }
+
+        public bool IsMatch(Uri uri)
+        {
+            if (uri is null)
+                throw new ArgumentNullException(nameof(uri));
+
+#pragma warning disable CA2234
+            return IsMatch(uri.ToString());
+#pragma warning restore CA2234
         }
 
         /// <summary>

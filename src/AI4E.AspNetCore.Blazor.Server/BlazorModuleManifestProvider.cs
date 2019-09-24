@@ -29,6 +29,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Reflection;
@@ -85,16 +86,19 @@ namespace AI4E.AspNetCore.Blazor.Server
 
             foreach (var assembly in blazorBoot.AssemblyReferences.Where(p => p.EndsWith(".dll", StringComparison.OrdinalIgnoreCase)).Append(blazorBoot.Main))
             {
-                var dllFile = Path.Combine(binPath, assembly);
+                var dllFile = Path.Combine(binPath, assembly!);
 
                 if (File.Exists(dllFile))
                 {
                     var dllFileRef = AssemblyName.GetAssemblyName(dllFile);
 
+                    Debug.Assert(dllFileRef.Name != null);
+                    Debug.Assert(dllFileRef.Version != null);
+
                     result.Add(new BlazorModuleManifestAssemblyEntry
                     {
-                        AssemblyName = dllFileRef.Name,
-                        AssemblyVersion = dllFileRef.Version,
+                        AssemblyName = dllFileRef.Name!,
+                        AssemblyVersion = dllFileRef.Version!,
                         IsComponentAssembly = assembly == blazorBoot.Main
                     });
                 }
@@ -103,11 +107,12 @@ namespace AI4E.AspNetCore.Blazor.Server
             return result;
 
         }
-
+#pragma warning disable CA1812
         private sealed class BlazorBoot
+#pragma warning restore CA1812
         {
             [JsonProperty("main")]
-            public string Main { get; set; }
+            public string? Main { get; set; }
 
             [JsonProperty("assemblyReferences")]
             public List<string> AssemblyReferences { get; set; } = new List<string>();

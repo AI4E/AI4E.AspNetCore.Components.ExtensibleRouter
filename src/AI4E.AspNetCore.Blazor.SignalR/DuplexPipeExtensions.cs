@@ -38,6 +38,7 @@
  */
 
 using System;
+using System.Diagnostics;
 using System.IO.Pipelines;
 using System.Threading;
 using System.Threading.Tasks;
@@ -49,14 +50,25 @@ namespace AI4E.AspNetCore.Blazor.SignalR
     {
         public static Task StartAsync(this IDuplexPipe pipe, Uri uri, TransferFormat transferFormat)
         {
-            var method = pipe.GetType().GetMethod(nameof(StartAsync), new Type[] { typeof(Uri), typeof(TransferFormat), typeof(CancellationToken) });
-            return (Task)method.Invoke(pipe, new object[] { uri, transferFormat, default(CancellationToken) });
+#pragma warning disable CA1062
+            var method = pipe.GetType().GetMethod(
+                nameof(StartAsync), new Type[] { typeof(Uri), typeof(TransferFormat), typeof(CancellationToken) });
+#pragma warning restore CA1062
+            Debug.Assert(method != null);
+            var result = method!.Invoke(pipe, new object[] { uri, transferFormat, default(CancellationToken) }) as Task;
+            Debug.Assert(result != null);
+            return result!;
         }
 
         public static Task StopAsync(this IDuplexPipe pipe)
         {
-            var method = pipe.GetType().GetMethod(nameof(StopAsync), new Type[] { });
-            return (Task)method.Invoke(pipe, new object[] { });
+#pragma warning disable CA1062
+            var method = pipe.GetType().GetMethod(nameof(StopAsync), Array.Empty<Type>());
+#pragma warning restore CA1062
+            Debug.Assert(method != null);
+            var result = method!.Invoke(pipe, Array.Empty<object>()) as Task;
+            Debug.Assert(result != null);
+            return result!;
         }
     }
 }

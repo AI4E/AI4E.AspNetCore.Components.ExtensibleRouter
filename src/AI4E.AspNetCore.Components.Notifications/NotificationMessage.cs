@@ -121,7 +121,7 @@ namespace AI4E.AspNetCore.Components.Notifications
         /// </summary>
         public DateTime? Timestamp { get; set; }
 
-        private NotificationType CheckValidNotificationType(
+        private static NotificationType CheckValidNotificationType(
             NotificationType notificationType,
             string paramName)
         {
@@ -135,7 +135,7 @@ namespace AI4E.AspNetCore.Components.Notifications
             return notificationType;
         }
 
-        private string CheckValidMessage(
+        private static string CheckValidMessage(
             string message,
             string paramName)
         {

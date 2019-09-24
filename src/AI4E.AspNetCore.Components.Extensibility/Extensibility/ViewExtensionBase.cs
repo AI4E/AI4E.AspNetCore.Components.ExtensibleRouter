@@ -27,6 +27,7 @@
  * --------------------------------------------------------------------------------------------------------------------
  */
 
+using System.Diagnostics.CodeAnalysis;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.Rendering;
@@ -47,6 +48,9 @@ namespace AI4E.AspNetCore.Components.Extensibility
         /// <inheritdoc />
         protected override void BuildRenderTree(RenderTreeBuilder builder)
         {
+            if (builder is null)
+                throw new System.ArgumentNullException(nameof(builder));
+
             builder.OpenComponent(sequence: 0, typeof(ViewExtensionPlaceholder<>).MakeGenericType(GetType()));
             builder.AddMultipleAttributes(sequence: 0, _parameters.ToDictionary());
             builder.CloseComponent();
@@ -71,6 +75,6 @@ namespace AI4E.AspNetCore.Components.Extensibility
     public abstract class ViewExtensionBase<TContext> : ViewExtensionBase, IViewExtensionDefinition<TContext>
     {
         /// <inheritdoc />
-        [Parameter] public TContext Context { get; set; }
+        [MaybeNull, Parameter] public TContext Context { get; set; } = default!;
     }
 }

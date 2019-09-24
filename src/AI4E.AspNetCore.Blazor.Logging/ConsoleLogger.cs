@@ -46,6 +46,7 @@
  */
 
 using System;
+using System.Globalization;
 using System.Text;
 using Microsoft.Extensions.Logging;
 using Microsoft.JSInterop;
@@ -54,11 +55,11 @@ namespace AI4E.AspNetCore.Blazor.Logging
 {
     internal sealed class ConsoleLogger : ILogger
     {
-        private static readonly string _loglevelPadding = ": ";
-        private static readonly string _messagePadding;
-        private static readonly string _newLineWithMessagePadding;
+        private const string LoglevelPadding = ": ";
+        private static readonly string MessagePadding;
+        private static readonly string NewLineWithMessagePadding;
 
-        private static readonly int[] _consoleColor2RGB =
+        private static readonly int[] ConsoleColor2RGB =
         {
              0x000000,
              0x000080,
@@ -79,23 +80,25 @@ namespace AI4E.AspNetCore.Blazor.Logging
         };
 
         // ConsoleColor does not have a value to specify the 'Default' color
-        private readonly ConsoleColor? DefaultConsoleColor = null;
+        private readonly ConsoleColor? _defaultConsoleColor = null;
 
         [ThreadStatic]
-        private static StringBuilder _logBuilder;
+        private static StringBuilder? _logBuilder;
 
         private readonly string _name;
         private readonly IJSInProcessRuntime _jsRuntime;
 
-        internal IExternalScopeProvider ScopeProvider { get; set; }
+        internal IExternalScopeProvider? ScopeProvider { get; set; }
 
-        internal ConsoleLoggerOptions Options { get; set; }
+        internal ConsoleLoggerOptions? Options { get; set; }
 
+#pragma warning disable CA1810
         static ConsoleLogger()
+#pragma warning restore CA1810
         {
             var logLevelString = GetLogLevelString(LogLevel.Information);
-            _messagePadding = new string(' ', logLevelString.Length + _loglevelPadding.Length);
-            _newLineWithMessagePadding = Environment.NewLine + _messagePadding;
+            MessagePadding = new string(' ', logLevelString.Length + LoglevelPadding.Length);
+            NewLineWithMessagePadding = Environment.NewLine + MessagePadding;
         }
 
         public ConsoleLogger(string name, IJSInProcessRuntime jsRuntime)
@@ -148,7 +151,7 @@ namespace AI4E.AspNetCore.Blazor.Logging
             var logLevelString = GetLogLevelString(logLevel);
             logBuilder.Append(logLevelString);
             // category and event id
-            logBuilder.Append(_loglevelPadding);
+            logBuilder.Append(LoglevelPadding);
             logBuilder.Append(logName);
             logBuilder.Append("[");
             logBuilder.Append(eventId);
@@ -160,11 +163,11 @@ namespace AI4E.AspNetCore.Blazor.Logging
             if (!string.IsNullOrEmpty(message))
             {
                 // message
-                logBuilder.Append(_messagePadding);
+                logBuilder.Append(MessagePadding);
 
                 var len = logBuilder.Length;
                 logBuilder.AppendLine(message);
-                logBuilder.Replace(Environment.NewLine, _newLineWithMessagePadding, len, message.Length);
+                logBuilder.Replace(Environment.NewLine, NewLineWithMessagePadding, len, message.Length);
             }
 
             // Example:
@@ -192,12 +195,12 @@ namespace AI4E.AspNetCore.Blazor.Logging
             _logBuilder = logBuilder;
         }
 
-        private static string ToRGB(ConsoleColor? logLevelColor)
+        private static string? ToRGB(ConsoleColor? logLevelColor)
         {
             if (logLevelColor == null)
                 return null;
 
-            return "#" + _consoleColor2RGB[(int)logLevelColor].ToString("X6");
+            return "#" + ConsoleColor2RGB[(int)logLevelColor].ToString("X6", CultureInfo.InvariantCulture);
         }
 
         public bool IsEnabled(LogLevel logLevel)
@@ -212,53 +215,41 @@ namespace AI4E.AspNetCore.Blazor.Logging
 
         private static string GetLogLevelString(LogLevel logLevel)
         {
-            switch (logLevel)
+            return logLevel switch
             {
-                case LogLevel.Trace:
-                    return "trce";
-                case LogLevel.Debug:
-                    return "dbug";
-                case LogLevel.Information:
-                    return "info";
-                case LogLevel.Warning:
-                    return "warn";
-                case LogLevel.Error:
-                    return "fail";
-                case LogLevel.Critical:
-                    return "crit";
-                default:
-                    throw new ArgumentOutOfRangeException(nameof(logLevel));
-            }
+                LogLevel.Trace => "trce",
+                LogLevel.Debug => "dbug",
+                LogLevel.Information => "info",
+                LogLevel.Warning => "warn",
+                LogLevel.Error => "fail",
+                LogLevel.Critical => "crit",
+                _ => throw new ArgumentOutOfRangeException(nameof(logLevel)),
+            };
         }
 
         private ConsoleColors GetLogLevelConsoleColors(LogLevel logLevel)
         {
-            if (Options.DisableColors)
+            if (Options?.DisableColors ?? false)
             {
                 return new ConsoleColors(null, null);
             }
 
             // We must explicitly set the background color if we are setting the foreground color,
             // since just setting one can look bad on the users console.
-            switch (logLevel)
+            return logLevel switch
             {
-                case LogLevel.Critical:
-                    return new ConsoleColors(ConsoleColor.White, ConsoleColor.Red);
-                case LogLevel.Error:
-                    return new ConsoleColors(ConsoleColor.Black, ConsoleColor.Red);
-                case LogLevel.Warning:
-                    return new ConsoleColors(DefaultConsoleColor, ConsoleColor.Yellow);
-                case LogLevel.Information:
-                    return new ConsoleColors(ConsoleColor.DarkGreen, DefaultConsoleColor);
-                default:
-                    return new ConsoleColors(DefaultConsoleColor, DefaultConsoleColor);
-            }
+                LogLevel.Critical => new ConsoleColors(ConsoleColor.White, ConsoleColor.Red),
+                LogLevel.Error => new ConsoleColors(ConsoleColor.Black, ConsoleColor.Red),
+                LogLevel.Warning => new ConsoleColors(_defaultConsoleColor, ConsoleColor.Yellow),
+                LogLevel.Information => new ConsoleColors(ConsoleColor.DarkGreen, _defaultConsoleColor),
+                _ => new ConsoleColors(_defaultConsoleColor, _defaultConsoleColor),
+            };
         }
 
         private void GetScopeInformation(StringBuilder stringBuilder)
         {
             var scopeProvider = ScopeProvider;
-            if (Options.IncludeScopes && scopeProvider != null)
+            if ((Options?.IncludeScopes ?? false) && scopeProvider != null)
             {
                 var initialLength = stringBuilder.Length;
 
@@ -271,7 +262,7 @@ namespace AI4E.AspNetCore.Blazor.Logging
 
                 if (stringBuilder.Length > initialLength)
                 {
-                    stringBuilder.Insert(initialLength, _messagePadding);
+                    stringBuilder.Insert(initialLength, MessagePadding);
                     stringBuilder.AppendLine();
                 }
             }

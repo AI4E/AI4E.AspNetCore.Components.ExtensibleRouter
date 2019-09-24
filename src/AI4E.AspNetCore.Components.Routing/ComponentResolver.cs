@@ -37,6 +37,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Reflection;
 using System.Runtime.Loader;
@@ -71,6 +72,9 @@ namespace AI4E.AspNetCore.Components
         /// <returns>An <see cref="IEnumerable{T}"/> of component types.</returns>
         public static IEnumerable<Type> GetComponents(Assembly assembly)
         {
+            if (assembly is null)
+                throw new ArgumentNullException(nameof(assembly));
+
             return assembly.ExportedTypes.Where(t => typeof(IComponent).IsAssignableFrom(t) && !t.IsInterface);
         }
 
@@ -80,9 +84,9 @@ namespace AI4E.AspNetCore.Components
         /// <param name="assembly">The origin assembly.</param>
         /// <param name="loadContext">The <see cref="AssemblyLoadContext"/> the origin assembly was loaded from.</param>
         /// <returns>An <see cref="IEnumerable{T}"/> of assemblies that contain components.</returns>
-        public static IEnumerable<Assembly> EnumerateComponentAssemblies(Assembly assembly, AssemblyLoadContext loadContext = null)
+        public static IEnumerable<Assembly> EnumerateComponentAssemblies(Assembly assembly, AssemblyLoadContext? loadContext = null)
         {
-            if (assembly == null)
+            if (assembly is null)
                 throw new ArgumentNullException(nameof(assembly));
 
             var assemblyName = assembly.GetName();
@@ -92,7 +96,7 @@ namespace AI4E.AspNetCore.Components
 
         private static IEnumerable<Assembly> EnumerateAssemblies(
             AssemblyName assemblyName,
-            AssemblyLoadContext loadContext,
+            AssemblyLoadContext? loadContext,
             HashSet<Assembly> visited)
         {
             Assembly assembly;
@@ -132,14 +136,21 @@ namespace AI4E.AspNetCore.Components
 
         private class AssemblyComparer : IEqualityComparer<Assembly>
         {
-            public bool Equals(Assembly x, Assembly y)
+            public bool Equals([AllowNull]Assembly x, [AllowNull]Assembly y)
             {
                 return string.Equals(x?.FullName, y?.FullName, StringComparison.Ordinal);
             }
 
-            public int GetHashCode(Assembly obj)
+            public int GetHashCode([DisallowNull]Assembly obj)
             {
-                return obj.FullName.GetHashCode();
+                if (obj is null)
+                    throw new ArgumentNullException(nameof(obj));
+
+#if NETCORE30 || NETSTD21
+                 return obj.FullName?.GetHashCode(StringComparison.Ordinal) ?? 0;
+#else
+                return obj.FullName?.GetHashCode() ?? 0;
+#endif
             }
         }
     }

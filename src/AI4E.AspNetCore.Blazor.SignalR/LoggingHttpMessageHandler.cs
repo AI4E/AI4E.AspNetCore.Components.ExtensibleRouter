@@ -48,46 +48,56 @@ namespace AI4E.AspNetCore.Blazor.SignalR
 {
     internal class LoggingHttpMessageHandler : DelegatingHandler
     {
-        private readonly ILogger<LoggingHttpMessageHandler> _logger;
+        private readonly ILogger<LoggingHttpMessageHandler>? _logger;
 
-        public LoggingHttpMessageHandler(HttpMessageHandler inner, ILoggerFactory loggerFactory)
+        public LoggingHttpMessageHandler(HttpMessageHandler inner, ILoggerFactory? loggerFactory)
             : base(inner)
         {
             if (loggerFactory == null)
                 throw new ArgumentNullException(nameof(loggerFactory));
-            _logger = loggerFactory.CreateLogger<LoggingHttpMessageHandler>();
+            _logger = loggerFactory?.CreateLogger<LoggingHttpMessageHandler>();
         }
 
         protected override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request,
             CancellationToken cancellationToken)
         {
             Log.SendingHttpRequest(_logger, request.Method, request.RequestUri);
-            var httpResponseMessage = await base.SendAsync(request, cancellationToken);
+            var httpResponseMessage = await base.SendAsync(request, cancellationToken).ConfigureAwait(false);
+
             if (!httpResponseMessage.IsSuccessStatusCode)
+            {
                 Log.UnsuccessfulHttpResponse(_logger, httpResponseMessage.StatusCode, request.Method,
-                    request.RequestUri);
+                                  request.RequestUri);
+            }
+
             return httpResponseMessage;
         }
 
         private static class Log
         {
-            private static readonly Action<ILogger, HttpMethod, Uri, Exception> _sendingHttpRequest =
+            private static readonly Action<ILogger, HttpMethod, Uri, Exception?> _sendingHttpRequest =
                 LoggerMessage.Define<HttpMethod, Uri>(LogLevel.Trace, new EventId(1, "SendingHttpRequest"),
                     "Sending HTTP request {RequestMethod} '{RequestUrl}'.");
 
-            private static readonly Action<ILogger, int, HttpMethod, Uri, Exception> _unsuccessfulHttpResponse =
+            private static readonly Action<ILogger, int, HttpMethod, Uri, Exception?> _unsuccessfulHttpResponse =
                 LoggerMessage.Define<int, HttpMethod, Uri>(LogLevel.Warning, new EventId(2, "UnsuccessfulHttpResponse"),
                     "Unsuccessful HTTP response {StatusCode} return from {RequestMethod} '{RequestUrl}'.");
 
-            public static void SendingHttpRequest(ILogger logger, HttpMethod requestMethod, Uri requestUrl)
+            public static void SendingHttpRequest(ILogger? logger, HttpMethod requestMethod, Uri requestUrl)
             {
+                if (logger is null)
+                    return;
+
                 Log._sendingHttpRequest(logger, requestMethod, requestUrl, null);
             }
 
-            public static void UnsuccessfulHttpResponse(ILogger logger, HttpStatusCode statusCode,
+            public static void UnsuccessfulHttpResponse(ILogger? logger, HttpStatusCode statusCode,
                 HttpMethod requestMethod, Uri requestUrl)
             {
-                Log._unsuccessfulHttpResponse(logger, (int) statusCode, requestMethod, requestUrl, null);
+                if (logger is null)
+                    return;
+
+                Log._unsuccessfulHttpResponse(logger, (int)statusCode, requestMethod, requestUrl, null);
             }
         }
     }

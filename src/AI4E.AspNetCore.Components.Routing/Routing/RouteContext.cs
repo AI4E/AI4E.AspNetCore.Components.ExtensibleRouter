@@ -58,8 +58,8 @@ namespace AI4E.AspNetCore.Components.Routing
 
         public string[] Segments { get; }
 
-        public Type Handler { get; set; }
+        public Type? Handler { get; set; }
 
-        public IReadOnlyDictionary<string, object> Parameters { get; set; }
+        public IReadOnlyDictionary<string, object?>? Parameters { get; set; }
     }
 }

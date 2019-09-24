@@ -35,12 +35,12 @@ namespace AI4E.AspNetCore.Blazor
 {
     internal interface IModuleManifestProvider
     {
-        ValueTask<BlazorModuleManifest> GetModuleManifestAsync(ModuleIdentifier module, bool bypassCache, CancellationToken cancellation = default);
+        ValueTask<BlazorModuleManifest?> GetModuleManifestAsync(ModuleIdentifier module, bool bypassCache, CancellationToken cancellation = default);
     }
 
     internal static class ModuleManifestProviderExtension
     {
-        public static ValueTask<BlazorModuleManifest> GetModuleManifestAsync(
+        public static ValueTask<BlazorModuleManifest?> GetModuleManifestAsync(
             this IModuleManifestProvider moduleManifestProvider,
             ModuleIdentifier module,
             CancellationToken cancellation = default)

@@ -68,7 +68,7 @@ namespace AI4E.AspNetCore.Components.Extensibility
         public IReadOnlyCollection<Assembly> Assemblies => _assemblies;
 
         /// <inheritdoc />
-        public event EventHandler AssembliesChanged;
+        public event EventHandler? AssembliesChanged;
 
         /// <summary>
         /// Adds an assembly to the manager.

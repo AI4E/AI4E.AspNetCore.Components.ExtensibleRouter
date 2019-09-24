@@ -51,7 +51,7 @@ namespace AI4E.AspNetCore.Components.Extensibility
 
         private RenderHandle _renderHandle;
         private bool _isInit;
-        private HashSet<Type> _viewExtensions;
+        private HashSet<Type>? _viewExtensions;
 
         /// <summary>
         /// Creates a new instance of the <see cref="ViewExtensionPlaceholder{TViewExtension}"/> type.
@@ -61,18 +61,18 @@ namespace AI4E.AspNetCore.Components.Extensibility
             _renderFragment = Render;
         }
 
-        [Inject] private IAssemblySource AssemblySource { get; set; }
+        [Inject] private IAssemblySource AssemblySource { get; set; } = null!;
 
         /// <summary>
         /// Gets or sets the view-extension context.
         /// </summary>
-        [Parameter] public object Context { get; set; }
+        [Parameter] public object? Context { get; set; }
 
         /// <summary>
         /// Gets or sets a collection of attributes that will be applied to the rendered view-extension.
         /// </summary>
         [Parameter(CaptureUnmatchedValues = true)]
-        public IReadOnlyDictionary<string, object> ViewExtensionAttributes { get; set; }
+        public IReadOnlyDictionary<string, object>? ViewExtensionAttributes { get; set; }
 
         /// <inheritdoc />
         public void Attach(RenderHandle renderHandle)
@@ -113,7 +113,7 @@ namespace AI4E.AspNetCore.Components.Extensibility
             AssemblySource.AssembliesChanged -= AssembliesChanged;
         }
 
-        private void AssembliesChanged(object sender, EventArgs e)
+        private void AssembliesChanged(object? sender, EventArgs e)
         {
             if (UpdateViewExtensions())
             {
@@ -142,18 +142,18 @@ namespace AI4E.AspNetCore.Components.Extensibility
             return false;
         }
 
-        private static readonly ConcurrentDictionary<Assembly, ImmutableList<Type>> _viewExtensionsLookup
+        private static readonly ConcurrentDictionary<Assembly, ImmutableList<Type>> ViewExtensionsLookup
             = new ConcurrentDictionary<Assembly, ImmutableList<Type>>();
 
         private static ImmutableList<Type> GetViewExtensions(Assembly assembly)
         {
-            if (_viewExtensionsLookup.TryGetValue(assembly, out var result))
+            if (ViewExtensionsLookup.TryGetValue(assembly, out var result))
             {
                 return result;
             }
 
             result = assembly.ExportedTypes.Where(IsViewExtension).ToImmutableList();
-            _viewExtensionsLookup.TryAdd(assembly, result);
+            ViewExtensionsLookup.TryAdd(assembly, result);
 
             return result;
         }
@@ -179,7 +179,7 @@ namespace AI4E.AspNetCore.Components.Extensibility
         private void Render(RenderTreeBuilder builder)
         {
             Debug.Assert(_viewExtensions != null);
-            foreach (var viewExtension in _viewExtensions)
+            foreach (var viewExtension in _viewExtensions!)
             {
                 builder.OpenComponent(sequence: 0, viewExtension);
                 ApplyParameters(builder);

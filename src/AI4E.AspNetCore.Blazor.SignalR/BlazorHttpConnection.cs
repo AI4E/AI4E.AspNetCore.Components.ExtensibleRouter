@@ -39,6 +39,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO.Pipelines;
 using System.Linq;
 using System.Net.Http;
@@ -59,31 +60,31 @@ namespace AI4E.AspNetCore.Blazor.SignalR
 {
     internal class BlazorHttpConnection : ConnectionContext, IConnectionInherentKeepAliveFeature
     {
-        private static readonly int MaxRedirects = 100;
-        private static readonly Task<string> NoAccessToken = Task.FromResult<string>(null);
+        private const int MaxRedirects = 100;
+        private static readonly Task<string?> NoAccessToken = Task.FromResult<string?>(null);
         private static readonly TimeSpan HttpClientTimeout = TimeSpan.FromSeconds(120.0);
 
         private readonly BlazorHttpConnectionOptions _options;
         private readonly IJSRuntime _jsRuntime;
         private readonly NavigationManager _navigationManager;
-        private readonly ILoggerFactory _loggerFactory;
-        private readonly ILogger<BlazorHttpConnection> _logger;
+        private readonly ILoggerFactory? _loggerFactory;
+        private readonly ILogger<BlazorHttpConnection>? _logger;
         private readonly HttpClient _httpClient;
 
         private readonly SemaphoreSlim _connectionLock = new SemaphoreSlim(1, 1);
 
-        private string _connectionId;
-        private IDuplexPipe _transport;
+        private string? _connectionId;
+        private IDuplexPipe? _transport;
         private bool _disposed;
         private bool _started;
         private bool _hasInherentKeepAlive;
-        private Func<Task<string>> _accessTokenProvider;
+        private Func<Task<string?>>? _accessTokenProvider;
 
         public BlazorHttpConnection(
             BlazorHttpConnectionOptions options,
             IJSRuntime jsRuntime,
             NavigationManager navigationManager,
-            ILoggerFactory loggerFactory)
+            ILoggerFactory? loggerFactory)
         {
             if (jsRuntime == null)
                 throw new ArgumentNullException(nameof(jsRuntime));
@@ -94,13 +95,13 @@ namespace AI4E.AspNetCore.Blazor.SignalR
             _options = options;
             _jsRuntime = jsRuntime;
             _navigationManager = navigationManager;
-            _loggerFactory = loggerFactory ?? NullLoggerFactory.Instance;
-            _logger = _loggerFactory.CreateLogger<BlazorHttpConnection>();
+            _loggerFactory = loggerFactory;
+            _logger = _loggerFactory?.CreateLogger<BlazorHttpConnection>();
             _httpClient = CreateHttpClient();
             Features.Set<IConnectionInherentKeepAliveFeature>(this);
         }
 
-        public override string ConnectionId
+        public override string? ConnectionId
         {
             get => _connectionId;
             set => throw new InvalidOperationException(
@@ -144,7 +145,7 @@ namespace AI4E.AspNetCore.Blazor.SignalR
                 return;
             }
 
-            await _connectionLock.WaitAsync();
+            await _connectionLock.WaitAsync().ConfigureAwait(false);
 
             try
             {
@@ -156,7 +157,7 @@ namespace AI4E.AspNetCore.Blazor.SignalR
                 else
                 {
                     Log.Starting(_logger);
-                    await SelectAndStartTransport(transferFormat);
+                    await SelectAndStartTransport(transferFormat).ConfigureAwait(false);
                     _started = true;
                     Log.Started(_logger);
                 }
@@ -170,6 +171,11 @@ namespace AI4E.AspNetCore.Blazor.SignalR
         private async Task SelectAndStartTransport(TransferFormat transferFormat)
         {
             var uri = _options.Url;
+
+            if (uri is null)
+            {
+                throw new InvalidOperationException("No uri specified to connect to.");
+            }
 
             // Fix relative url paths
             if (!uri.IsAbsoluteUri || uri.Scheme == Uri.UriSchemeFile && uri.OriginalString.StartsWith("/", StringComparison.Ordinal))
@@ -185,21 +191,22 @@ namespace AI4E.AspNetCore.Blazor.SignalR
                     throw new InvalidOperationException(
                         "Negotiation can only be skipped when using the WebSocket transport directly.");
                 Log.StartingTransport(_logger, _options.Transports, uri);
-                await StartTransport(uri, _options.Transports, transferFormat);
+                await StartTransport(uri, _options.Transports, transferFormat)
+                    .ConfigureAwait(false);
             }
             else
             {
                 var redirects = 0;
-                NegotiationResponse negotiationResponse;
+                NegotiationResponse? negotiationResponse;
                 do
                 {
-                    negotiationResponse = await GetNegotiationResponseAsync(uri);
+                    negotiationResponse = await GetNegotiationResponseAsync(uri).ConfigureAwait(false);
                     if (negotiationResponse.Url != null)
                         uri = new Uri(negotiationResponse.Url);
                     if (negotiationResponse.AccessToken != null)
                     {
                         var accessToken = negotiationResponse.AccessToken;
-                        _accessTokenProvider = () => Task.FromResult(accessToken);
+                        _accessTokenProvider = () => Task.FromResult(accessToken)!;
                     }
 
                     ++redirects;
@@ -236,17 +243,21 @@ namespace AI4E.AspNetCore.Blazor.SignalR
                             {
                                 if (negotiationResponse == null)
                                 {
-                                    connectUrl = CreateConnectUrl(uri, (await GetNegotiationResponseAsync(uri)).ConnectionId);
+                                    connectUrl = CreateConnectUrl(
+                                        uri,
+                                        (await GetNegotiationResponseAsync(uri).ConfigureAwait(false)).ConnectionId);
                                 }
 
                                 Log.StartingTransport(_logger, transportType, connectUrl);
-                                await StartTransport(connectUrl, transportType, transferFormat);
+                                await StartTransport(connectUrl, transportType, transferFormat).ConfigureAwait(false);
                                 break;
                             }
                         }
-                        catch (Exception ex)
+#pragma warning disable CA1031
+                        catch (Exception exc)
+#pragma warning restore CA1031
                         {
-                            Log.TransportFailed(_logger, transportType, ex);
+                            Log.TransportFailed(_logger, transportType, exc);
                             negotiationResponse = null;
                         }
                     }
@@ -264,10 +275,10 @@ namespace AI4E.AspNetCore.Blazor.SignalR
         private async Task StartTransport(Uri connectUrl, HttpTransportType transportType,
             TransferFormat transferFormat)
         {
-            var transport = await CreateTransport(transportType);
+            var transport = await CreateTransport(transportType).ConfigureAwait(false);
             try
             {
-                await transport.StartAsync(connectUrl, transferFormat);
+                await transport.StartAsync(connectUrl, transferFormat).ConfigureAwait(false);
             }
             catch (Exception ex)
             {
@@ -298,7 +309,8 @@ namespace AI4E.AspNetCore.Blazor.SignalR
             if (useWebSockets && (_options.Implementations & BlazorTransportType.JsWebSockets) ==
                 BlazorTransportType.JsWebSockets && await BlazorWebSocketsTransport.IsSupportedAsync(_jsRuntime))
             {
-                return new BlazorWebSocketsTransport(await GetAccessTokenAsync(), _jsRuntime, _loggerFactory);
+                return new BlazorWebSocketsTransport(
+                    await GetAccessTokenAsync().ConfigureAwait(false), _jsRuntime, _loggerFactory);
             }
 
             var useSSE = (availableServerTransports & HttpTransportType.ServerSentEvents & _options.Transports) ==
@@ -307,13 +319,23 @@ namespace AI4E.AspNetCore.Blazor.SignalR
             if (useSSE && (_options.Implementations & BlazorTransportType.JsServerSentEvents) ==
                 BlazorTransportType.JsServerSentEvents && await BlazorServerSentEventsTransport.IsSupportedAsync(_jsRuntime))
             {
-                return new BlazorServerSentEventsTransport(await GetAccessTokenAsync(), _httpClient, _jsRuntime, _loggerFactory);
+                return new BlazorServerSentEventsTransport(
+                    await GetAccessTokenAsync().ConfigureAwait(false),
+                    _httpClient,
+                    _jsRuntime,
+                    _loggerFactory);
             }
 
             if (useSSE && (_options.Implementations & BlazorTransportType.ManagedServerSentEvents) ==
                 BlazorTransportType.ManagedServerSentEvents && false)
             {
-                return (IDuplexPipe)ReflectionHelper.CreateInstance(typeof(HttpConnection).Assembly, "Microsoft.AspNetCore.Http.Connections.Client.Internal.ServerSentEventsTransport", _httpClient, _loggerFactory);
+                var duplexPipe = ReflectionHelper.CreateInstance(
+                    typeof(HttpConnection).Assembly,
+                    "Microsoft.AspNetCore.Http.Connections.Client.Internal.ServerSentEventsTransport",
+                    _httpClient,
+                    _loggerFactory ?? NullLoggerFactory.Instance) as IDuplexPipe;
+                Debug.Assert(duplexPipe != null);
+                return duplexPipe!;
             }
 
             var useLongPolling = (availableServerTransports & HttpTransportType.LongPolling & _options.Transports) ==
@@ -328,7 +350,13 @@ namespace AI4E.AspNetCore.Blazor.SignalR
             if (useLongPolling && (_options.Implementations & BlazorTransportType.ManagedLongPolling) ==
                 BlazorTransportType.ManagedLongPolling)
             {
-                return (IDuplexPipe)ReflectionHelper.CreateInstance(typeof(HttpConnection).Assembly, "Microsoft.AspNetCore.Http.Connections.Client.Internal.LongPollingTransport", _httpClient, _loggerFactory);
+                var duplexPipe = ReflectionHelper.CreateInstance(
+                    typeof(HttpConnection).Assembly,
+                    "Microsoft.AspNetCore.Http.Connections.Client.Internal.LongPollingTransport",
+                    _httpClient,
+                    _loggerFactory ?? NullLoggerFactory.Instance) as IDuplexPipe;
+                Debug.Assert(duplexPipe != null);
+                return duplexPipe!;
             }
 
             throw new InvalidOperationException(
@@ -337,12 +365,13 @@ namespace AI4E.AspNetCore.Blazor.SignalR
 
         private async Task<NegotiationResponse> GetNegotiationResponseAsync(Uri uri)
         {
-            var negotiationResponse = await NegotiateAsync(uri, _httpClient, _logger);
+            var negotiationResponse = await NegotiateAsync(uri, _httpClient, _logger)
+                .ConfigureAwait(false);
             _connectionId = negotiationResponse.ConnectionId;
             return negotiationResponse;
         }
 
-        private async Task<NegotiationResponse> NegotiateAsync(Uri url, HttpClient httpClient, ILogger logger)
+        private async Task<NegotiationResponse> NegotiateAsync(Uri url, HttpClient httpClient, ILogger? logger)
         {
             NegotiationResponse negotiationResponse;
             try
@@ -350,7 +379,7 @@ namespace AI4E.AspNetCore.Blazor.SignalR
                 Log.EstablishingConnection(logger, url);
                 var uriBuilder = new UriBuilder(url);
 
-                if (!uriBuilder.Path.EndsWith("/"))
+                if (!uriBuilder.Path.EndsWith("/", StringComparison.Ordinal))
                 {
                     uriBuilder.Path += "/";
                 }
@@ -361,10 +390,11 @@ namespace AI4E.AspNetCore.Blazor.SignalR
                     Version = new Version(1, 1)
                 };
 
-                using var response1 = await httpClient.SendAsync(request, HttpCompletionOption.ResponseHeadersRead);
+                using var response1 = await httpClient.SendAsync(request, HttpCompletionOption.ResponseHeadersRead)
+                    .ConfigureAwait(false);
                 response1.EnsureSuccessStatusCode();
                 NegotiationResponse response2;
-                var content = await response1.Content.ReadAsByteArrayAsync();
+                var content = await response1.Content.ReadAsByteArrayAsync().ConfigureAwait(false);
                 response2 = NegotiateProtocol.ParseResponse(content);
                 Log.ConnectionEstablished(_logger, response2.ConnectionId);
                 negotiationResponse = response2;
@@ -436,7 +466,7 @@ namespace AI4E.AspNetCore.Blazor.SignalR
             return httpClient;
         }
 
-        internal Task<string> GetAccessTokenAsync()
+        internal Task<string?> GetAccessTokenAsync()
         {
             return _accessTokenProvider == null ? NoAccessToken : _accessTokenProvider();
         }
@@ -446,7 +476,7 @@ namespace AI4E.AspNetCore.Blazor.SignalR
             if (_disposed)
                 return;
 
-            await _connectionLock.WaitAsync();
+            await _connectionLock.WaitAsync().ConfigureAwait(false);
 
             try
             {
@@ -455,9 +485,14 @@ namespace AI4E.AspNetCore.Blazor.SignalR
                     Log.DisposingHttpConnection(_logger);
                     try
                     {
-                        await _transport.StopAsync();
+                        if (_transport != null)
+                        {
+                            await _transport.StopAsync().ConfigureAwait(false);
+                        }
                     }
+#pragma warning disable CA1031
                     catch (Exception ex)
+#pragma warning restore CA1031
                     {
                         Log.TransportThrewExceptionOnStop(_logger, ex);
                     }
@@ -482,173 +517,230 @@ namespace AI4E.AspNetCore.Blazor.SignalR
 
         private static class Log
         {
-            private static readonly Action<ILogger, Exception> _starting =
+            private static readonly Action<ILogger, Exception?> StartingMessage =
                 LoggerMessage.Define(LogLevel.Debug, new EventId(1, "Starting"), "Starting HttpConnection.");
 
-            private static readonly Action<ILogger, Exception> _skippingStart = LoggerMessage.Define(LogLevel.Debug,
+            private static readonly Action<ILogger, Exception?> SkippingStartMessage = LoggerMessage.Define(LogLevel.Debug,
                 new EventId(2, "SkippingStart"), "Skipping start, connection is already started.");
 
-            private static readonly Action<ILogger, Exception> _started = LoggerMessage.Define(LogLevel.Information,
+            private static readonly Action<ILogger, Exception?> StartedMessage = LoggerMessage.Define(LogLevel.Information,
                 new EventId(3, "Started"), "HttpConnection Started.");
 
-            private static readonly Action<ILogger, Exception> _disposingHttpConnection =
+            private static readonly Action<ILogger, Exception?> DisposingHttpConnectionMessage =
                 LoggerMessage.Define(LogLevel.Debug, new EventId(4, "DisposingHttpConnection"),
                     "Disposing HttpConnection.");
 
-            private static readonly Action<ILogger, Exception> _skippingDispose = LoggerMessage.Define(LogLevel.Debug,
+            private static readonly Action<ILogger, Exception?> SkippingDisposeMessage = LoggerMessage.Define(LogLevel.Debug,
                 new EventId(5, "SkippingDispose"), "Skipping dispose, connection is already disposed.");
 
-            private static readonly Action<ILogger, Exception> _disposed = LoggerMessage.Define(LogLevel.Information,
+            private static readonly Action<ILogger, Exception?> DisposedMessage = LoggerMessage.Define(LogLevel.Information,
                 new EventId(6, "Disposed"), "HttpConnection Disposed.");
 
-            private static readonly Action<ILogger, string, Uri, Exception> _startingTransport =
+            private static readonly Action<ILogger, string, Uri, Exception?> StartingTransportMessage =
                 LoggerMessage.Define<string, Uri>(LogLevel.Debug, new EventId(7, "StartingTransport"),
                     "Starting transport '{Transport}' with Url: {Url}.");
 
-            private static readonly Action<ILogger, Uri, Exception> _establishingConnection =
+            private static readonly Action<ILogger, Uri, Exception?> EstablishingConnectionMessage =
                 LoggerMessage.Define<Uri>(LogLevel.Debug, new EventId(8, "EstablishingConnection"),
                     "Establishing connection with server at '{Url}'.");
 
-            private static readonly Action<ILogger, string, Exception> _connectionEstablished =
+            private static readonly Action<ILogger, string, Exception?> ConnectionEstablishedMessage =
                 LoggerMessage.Define<string>(LogLevel.Debug, new EventId(9, "Established"),
                     "Established connection '{ConnectionId}' with the server.");
 
-            private static readonly Action<ILogger, Uri, Exception> _errorWithNegotiation =
+            private static readonly Action<ILogger, Uri, Exception?> ErrorWithNegotiationMessage =
                 LoggerMessage.Define<Uri>(LogLevel.Error, new EventId(10, "ErrorWithNegotiation"),
                     "Failed to start connection. Error getting negotiation response from '{Url}'.");
 
-            private static readonly Action<ILogger, HttpTransportType, Exception> _errorStartingTransport =
+            private static readonly Action<ILogger, HttpTransportType, Exception?> ErrorStartingTransportMessage =
                 LoggerMessage.Define<HttpTransportType>(LogLevel.Error, new EventId(11, "ErrorStartingTransport"),
                     "Failed to start connection. Error starting transport '{Transport}'.");
 
-            private static readonly Action<ILogger, string, Exception> _transportNotSupported =
+            private static readonly Action<ILogger, string, Exception?> TransportNotSupportedMessage =
                 LoggerMessage.Define<string>(LogLevel.Debug, new EventId(12, "TransportNotSupported"),
                     "Skipping transport {TransportName} because it is not supported by this client.");
 
-            private static readonly Action<ILogger, string, string, Exception> _transportDoesNotSupportTransferFormat =
+            private static readonly Action<ILogger, string, string, Exception?> TransportDoesNotSupportTransferFormatMessage =
                 LoggerMessage.Define<string, string>(LogLevel.Debug,
                     new EventId(13, "TransportDoesNotSupportTransferFormat"),
                     "Skipping transport {TransportName} because it does not support the requested transfer format '{TransferFormat}'.");
 
-            private static readonly Action<ILogger, string, Exception> _transportDisabledByClient =
+            private static readonly Action<ILogger, string, Exception?> TransportDisabledByClientMessage =
                 LoggerMessage.Define<string>(LogLevel.Debug, new EventId(14, "TransportDisabledByClient"),
                     "Skipping transport {TransportName} because it was disabled by the client.");
 
-            private static readonly Action<ILogger, string, Exception> _transportFailed =
+            private static readonly Action<ILogger, string, Exception?> TransportFailedMessage =
                 LoggerMessage.Define<string>(LogLevel.Debug, new EventId(15, "TransportFailed"),
                     "Skipping transport {TransportName} because it failed to initialize.");
 
-            private static readonly Action<ILogger, Exception> _webSocketsNotSupportedByOperatingSystem =
+            private static readonly Action<ILogger, Exception?> WebSocketsNotSupportedByOperatingSystemMessage =
                 LoggerMessage.Define(LogLevel.Debug, new EventId(16, "WebSocketsNotSupportedByOperatingSystem"),
                     "Skipping WebSockets because they are not supported by the operating system.");
 
-            private static readonly Action<ILogger, Exception> _transportThrewExceptionOnStop =
+            private static readonly Action<ILogger, Exception?> TransportThrewExceptionOnStopMessage =
                 LoggerMessage.Define(LogLevel.Error, new EventId(17, "TransportThrewExceptionOnStop"),
                     "The transport threw an exception while stopping.");
 
-            private static readonly Action<ILogger, HttpTransportType, Exception> _transportStarted =
+            private static readonly Action<ILogger, HttpTransportType, Exception?> TransportStartedMessage =
                 LoggerMessage.Define<HttpTransportType>(LogLevel.Debug, new EventId(18, "TransportStarted"),
                     "Transport '{Transport}' started.");
 
-            public static void Starting(ILogger logger)
+            public static void Starting(ILogger? logger)
             {
-                _starting(logger, null);
+                if (logger is null)
+                    return;
+
+                StartingMessage(logger, null);
             }
 
-            public static void SkippingStart(ILogger logger)
+            public static void SkippingStart(ILogger? logger)
             {
-                _skippingStart(logger, null);
+                if (logger is null)
+                    return;
+
+                SkippingStartMessage(logger, null);
             }
 
-            public static void Started(ILogger logger)
+            public static void Started(ILogger? logger)
             {
-                _started(logger, null);
+                if (logger is null)
+                    return;
+
+                StartedMessage(logger, null);
             }
 
-            public static void DisposingHttpConnection(ILogger logger)
+            public static void DisposingHttpConnection(ILogger? logger)
             {
-                _disposingHttpConnection(logger, null);
+                if (logger is null)
+                    return;
+
+                DisposingHttpConnectionMessage(logger, null);
             }
 
-            public static void SkippingDispose(ILogger logger)
+            public static void SkippingDispose(ILogger? logger)
             {
-                _skippingDispose(logger, null);
+                if (logger is null)
+                    return;
+
+                SkippingDisposeMessage(logger, null);
             }
 
-            public static void Disposed(ILogger logger)
+            public static void Disposed(ILogger? logger)
             {
-                _disposed(logger, null);
+                if (logger is null)
+                    return;
+
+                DisposedMessage(logger, null);
             }
 
-            public static void StartingTransport(ILogger logger, HttpTransportType transportType, Uri url)
+            public static void StartingTransport(ILogger? logger, HttpTransportType transportType, Uri url)
             {
+                if (logger is null)
+                    return;
+
                 if (!logger.IsEnabled(LogLevel.Debug))
                     return;
-                _startingTransport(logger, transportType.ToString(), url, null);
+
+                StartingTransportMessage(logger, transportType.ToString(), url, null);
             }
 
-            public static void EstablishingConnection(ILogger logger, Uri url)
+            public static void EstablishingConnection(ILogger? logger, Uri url)
             {
-                _establishingConnection(logger, url, null);
+                if (logger is null)
+                    return;
+
+                EstablishingConnectionMessage(logger, url, null);
             }
 
-            public static void ConnectionEstablished(ILogger logger, string connectionId)
+            public static void ConnectionEstablished(ILogger? logger, string connectionId)
             {
-                _connectionEstablished(logger, connectionId, null);
+                if (logger is null)
+                    return;
+
+                ConnectionEstablishedMessage(logger, connectionId, null);
             }
 
-            public static void ErrorWithNegotiation(ILogger logger, Uri url, Exception exception)
+            public static void ErrorWithNegotiation(ILogger? logger, Uri url, Exception exception)
             {
-                _errorWithNegotiation(logger, url, exception);
+                if (logger is null)
+                    return;
+
+                ErrorWithNegotiationMessage(logger, url, exception);
             }
 
-            public static void ErrorStartingTransport(ILogger logger, HttpTransportType transportType,
+            public static void ErrorStartingTransport(ILogger? logger, HttpTransportType transportType,
                 Exception exception)
             {
-                _errorStartingTransport(logger, transportType, exception);
+                if (logger is null)
+                    return;
+
+                ErrorStartingTransportMessage(logger, transportType, exception);
             }
 
-            public static void TransportNotSupported(ILogger logger, string transport)
+            public static void TransportNotSupported(ILogger? logger, string transport)
             {
-                _transportNotSupported(logger, transport, null);
+                if (logger is null)
+                    return;
+
+                TransportNotSupportedMessage(logger, transport, null);
             }
 
-            public static void TransportDoesNotSupportTransferFormat(ILogger logger, HttpTransportType transport,
+            public static void TransportDoesNotSupportTransferFormat(ILogger? logger, HttpTransportType transport,
                 TransferFormat transferFormat)
             {
+                if (logger is null)
+                    return;
+
                 if (!logger.IsEnabled(LogLevel.Debug))
                     return;
-                _transportDoesNotSupportTransferFormat(logger, transport.ToString(), transferFormat.ToString(),
+
+                TransportDoesNotSupportTransferFormatMessage(logger, transport.ToString(), transferFormat.ToString(),
                     null);
             }
 
-            public static void TransportDisabledByClient(ILogger logger, HttpTransportType transport)
+            public static void TransportDisabledByClient(ILogger? logger, HttpTransportType transport)
             {
+                if (logger is null)
+                    return;
+
                 if (!logger.IsEnabled(LogLevel.Debug))
                     return;
-                _transportDisabledByClient(logger, transport.ToString(), null);
+                TransportDisabledByClientMessage(logger, transport.ToString(), null);
             }
 
-            public static void TransportFailed(ILogger logger, HttpTransportType transport, Exception ex)
+            public static void TransportFailed(ILogger? logger, HttpTransportType transport, Exception ex)
             {
+                if (logger is null)
+                    return;
+
                 if (!logger.IsEnabled(LogLevel.Debug))
                     return;
-                _transportFailed(logger, transport.ToString(), ex);
+
+                TransportFailedMessage(logger, transport.ToString(), ex);
             }
 
-            public static void WebSocketsNotSupportedByOperatingSystem(ILogger logger)
+            public static void WebSocketsNotSupportedByOperatingSystem(ILogger? logger)
             {
-                _webSocketsNotSupportedByOperatingSystem(logger, null);
+                if (logger is null)
+                    return;
+
+                WebSocketsNotSupportedByOperatingSystemMessage(logger, null);
             }
 
-            public static void TransportThrewExceptionOnStop(ILogger logger, Exception ex)
+            public static void TransportThrewExceptionOnStop(ILogger? logger, Exception ex)
             {
-                _transportThrewExceptionOnStop(logger, ex);
+                if (logger is null)
+                    return;
+
+                TransportThrewExceptionOnStopMessage(logger, ex);
             }
 
-            public static void TransportStarted(ILogger logger, HttpTransportType transportType)
+            public static void TransportStarted(ILogger? logger, HttpTransportType transportType)
             {
-                _transportStarted(logger, transportType, null);
+                if (logger is null)
+                    return;
+
+                TransportStartedMessage(logger, transportType, null);
             }
         }
     }

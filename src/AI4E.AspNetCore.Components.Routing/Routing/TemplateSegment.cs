@@ -1,4 +1,4 @@
-﻿/* License
+/* License
  * --------------------------------------------------------------------------------------------------------------------
  * This file is part of the AI4E distribution.
  *   (https://github.com/AI4E/AI4E.AspNetCore.Components.Extensions)
@@ -46,7 +46,7 @@ namespace AI4E.AspNetCore.Components.Routing
         {
             IsParameter = isParameter;
 
-            if (!isParameter || segment.IndexOf(':') < 0)
+            if (!isParameter || segment.IndexOf(':', StringComparison.Ordinal) < 0)
             {
                 Value = segment;
                 Constraints = Array.Empty<RouteConstraint>();
@@ -74,7 +74,7 @@ namespace AI4E.AspNetCore.Components.Routing
 
         public RouteConstraint[] Constraints { get; }
 
-        public bool Match(string pathSegment, out object matchedParameterValue)
+        public bool Match(string pathSegment, out object? matchedParameterValue)
         {
             if (IsParameter)
             {

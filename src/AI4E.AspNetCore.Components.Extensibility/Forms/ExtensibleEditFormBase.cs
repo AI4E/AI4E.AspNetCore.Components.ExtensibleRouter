@@ -52,25 +52,25 @@ namespace AI4E.AspNetCore.Components.Forms
         /// be constructed for this model. If using this parameter, do not also supply
         /// a value for <see cref="EditContext"/>.
         /// </summary>
-        [Parameter] public object Model { get; set; }
+        [Parameter] public object? Model { get; set; }
 
         /// <summary>
         /// Supplies the edit context explicitly. If using this parameter, do not
         /// also supply <see cref="Model"/>, since the model value will be taken
         /// from the <see cref="EditContext.Model"/> property.
         /// </summary>
-        [Parameter] public EditContext EditContext { get; set; }
+        [Parameter] public EditContext? EditContext { get; set; }
 
         /// <summary>
         /// Specifies the content to be rendered inside this component.
         /// </summary>
-        [Parameter] public RenderFragment<ExtensibleEditContext> ChildContent { get; set; }
+        [Parameter] public RenderFragment<ExtensibleEditContext>? ChildContent { get; set; }
 
         /// <summary>
         /// Gets or sets a collection of additional attributes that will be applied to the created element.
         /// </summary>
         [Parameter(CaptureUnmatchedValues = true)]
-        public IReadOnlyDictionary<string, object> AdditionalAttributes { get; set; }
+        public IReadOnlyDictionary<string, object>? AdditionalAttributes { get; set; }
 
         /// <summary>
         /// A callback that will be invoked when the form is submitted and the

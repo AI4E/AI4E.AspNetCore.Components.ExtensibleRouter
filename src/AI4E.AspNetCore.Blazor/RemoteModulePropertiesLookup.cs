@@ -41,11 +41,12 @@ namespace AI4E.AspNetCore.Blazor
     public sealed class RemoteModulePropertiesLookup : IModulePropertiesLookup
     {
         private readonly IMessageDispatcher _messageDispatcher;
-        private readonly ILogger<RemoteModulePropertiesLookup> _logger;
+        private readonly ILogger<RemoteModulePropertiesLookup>? _logger;
 
         private readonly ConcurrentDictionary<ModuleIdentifier, ModuleProperties> _cache;
 
-        public RemoteModulePropertiesLookup(IMessageDispatcher messageDispatcher, ILogger<RemoteModulePropertiesLookup> logger = null)
+        public RemoteModulePropertiesLookup(
+            IMessageDispatcher messageDispatcher, ILogger<RemoteModulePropertiesLookup>? logger = null)
         {
             if (messageDispatcher == null)
                 throw new ArgumentNullException(nameof(messageDispatcher));
@@ -56,20 +57,20 @@ namespace AI4E.AspNetCore.Blazor
             _cache = new ConcurrentDictionary<ModuleIdentifier, ModuleProperties>();
         }
 
-        public ValueTask<ModuleProperties> LookupAsync(ModuleIdentifier module, CancellationToken cancellation)
+        public ValueTask<ModuleProperties?> LookupAsync(ModuleIdentifier module, CancellationToken cancellation)
         {
             if (module == default)
                 throw new ArgumentDefaultException(nameof(module));
 
             if (_cache.TryGetValue(module, out var moduleProperties))
             {
-                return new ValueTask<ModuleProperties>(moduleProperties);
+                return new ValueTask<ModuleProperties?>(moduleProperties);
             }
 
             return InternalLookupAsync(module, cancellation);
         }
 
-        private async ValueTask<ModuleProperties> InternalLookupAsync(ModuleIdentifier module, CancellationToken cancellation)
+        private async ValueTask<ModuleProperties?> InternalLookupAsync(ModuleIdentifier module, CancellationToken cancellation)
         {
             var maxTries = 10;
             var timeToWait = new TimeSpan(TimeSpan.TicksPerSecond * 2);
@@ -82,7 +83,7 @@ namespace AI4E.AspNetCore.Blazor
                 if (queryResult.IsSuccessWithResult<ModuleProperties>(out var moduleProperties))
                 {
                     Assert(moduleProperties != null);
-                    return _cache.GetOrAdd(module, moduleProperties);
+                    return _cache.GetOrAdd(module, moduleProperties!);
                 }
 
                 if (!queryResult.IsNotFound())
@@ -91,7 +92,7 @@ namespace AI4E.AspNetCore.Blazor
                     break;
                 }
 
-                await Task.Delay(timeToWait, cancellation);
+                await Task.Delay(timeToWait, cancellation).ConfigureAwait(false);
             }
 
             return null;

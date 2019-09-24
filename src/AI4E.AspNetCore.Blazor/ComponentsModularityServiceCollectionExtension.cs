@@ -43,7 +43,7 @@ namespace Microsoft.Extensions.DependencyInjection
 {
     public static class ComponentsModularityServiceCollectionExtension
     {
-        internal static readonly string _defaultHubUrl = "/MessageDispatcherHub"; // TODO: This should be configured only once.
+        internal const string DefaultHubUrl = "/MessageDispatcherHub"; // TODO: This should be configured only once.
 
         public static void AddBlazorMessageDispatcher(this IServiceCollection services)
         {
@@ -56,7 +56,7 @@ namespace Microsoft.Extensions.DependencyInjection
             {
                 var jsRuntime = serviceProvider.GetRequiredService<IJSRuntime>();
                 var navigationManager = serviceProvider.GetRequiredService<NavigationManager>();
-                hubConnectionBuilder.WithUrlBlazor(new Uri(_defaultHubUrl, UriKind.Relative), jsRuntime, navigationManager);
+                hubConnectionBuilder.WithUrlBlazor(new Uri(DefaultHubUrl, UriKind.Relative), jsRuntime, navigationManager);
             }
 
             services.AddSignalRMessageDispatcher(ConfigureHubConnection);

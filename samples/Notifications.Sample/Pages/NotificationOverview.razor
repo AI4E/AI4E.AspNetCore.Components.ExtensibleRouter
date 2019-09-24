@@ -32,7 +32,7 @@
 
     private void UpdateNotifications()
     {
-        var notifications = NotificationManager.Notifications;
+        var notifications = NotificationManager.GetNotifications(); ;
         Notifications = (notifications as IReadOnlyList<Notification>) ?? notifications.ToList();
     }
 

@@ -54,10 +54,10 @@ namespace AI4E.AspNetCore.Components
         private INotificationManagerScope? _loadModelNotifications;
         private TModel? _model;
         private ILogger? Logger => _logger.Value;
-#pragma warning disable IDE0069
+#pragma warning disable IDE0069, CA2213
         // If _loadModelCancellationSource is null, no operation is in progress currently.
         private CancellationTokenSource? _loadModelCancellationSource;
-#pragma warning restore IDE0069
+#pragma warning restore IDE0069, CA2213
 
         #endregion
 
@@ -158,7 +158,7 @@ namespace AI4E.AspNetCore.Components
         {
             try
             {
-                await task;
+                await task.ConfigureAwait(true);
             }
             catch // avoiding exception filters for AOT runtime support
             {

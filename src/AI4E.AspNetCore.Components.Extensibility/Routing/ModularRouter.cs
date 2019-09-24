@@ -42,7 +42,7 @@ namespace AI4E.AspNetCore.Components.Routing
     {
         private bool _lastRoutingSuccessful = true;
 
-        [Inject] private IAssemblySource AssemblySoure { get; set; }
+        [Inject] private IAssemblySource AssemblySoure { get; set; } = null!;
 
         /// <inheritdoc />
         protected override IEnumerable<Type> ResolveRoutableComponents()
@@ -61,7 +61,7 @@ namespace AI4E.AspNetCore.Components.Routing
             base.OnInit();
         }
 
-        private void AssembliesChanged(object sender, EventArgs e)
+        private void AssembliesChanged(object? sender, EventArgs e)
         {
             UpdateRouteTable();
 
