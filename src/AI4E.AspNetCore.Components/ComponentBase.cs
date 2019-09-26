@@ -38,6 +38,7 @@ using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.Routing;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
+using Nito.AsyncEx;
 
 namespace AI4E.AspNetCore.Components
 {
@@ -47,11 +48,9 @@ namespace AI4E.AspNetCore.Components
         #region Fields
 
         private readonly AsyncLocal<INotificationManager?> _ambientNotifications;
-        private readonly AsyncLocal<TModel?> _ambientModel;
         private readonly Lazy<ILogger?> _logger;
-        private readonly object _loadModelMutex = new object();
+        private readonly AsyncLock _loadModelMutex = new AsyncLock();
         private INotificationManagerScope? _loadModelNotifications;
-        private TModel? _model;
         private ILogger? Logger => _logger.Value;
 #pragma warning disable IDE0069, CA2213
         // If _loadModelCancellationSource is null, no operation is in progress currently.
@@ -65,7 +64,6 @@ namespace AI4E.AspNetCore.Components
         protected ComponentBase()
         {
             _ambientNotifications = new AsyncLocal<INotificationManager?>();
-            _ambientModel = new AsyncLocal<TModel?>();
             _logger = new Lazy<ILogger?>(BuildLogger);
 
             // These will be set by DI. Just to disable warnings here.
@@ -84,11 +82,10 @@ namespace AI4E.AspNetCore.Components
 
         #region Properties
 
-        protected internal TModel? Model
-            => _ambientModel.Value ?? Volatile.Read(ref _model);
+        protected internal TModel? Model { get; private set; }
 
         protected internal bool IsLoading
-            => Volatile.Read(ref _loadModelCancellationSource) != null;
+            => _loadModelCancellationSource != null;
 
         protected internal bool IsLoaded
             => !IsLoading && Model != null;
@@ -127,8 +124,7 @@ namespace AI4E.AspNetCore.Components
 
         private void OnLocationChanged(object? sender, LocationChangedEventArgs? e)
         {
-            OnLocationChangedAsync()
-                .HandleExceptions(Logger);
+            InvokeAsync(() => OnLocationChangedAsync()).HandleExceptions(Logger);
         }
 
         private ValueTask OnLocationChangedAsync()
@@ -177,86 +173,75 @@ namespace AI4E.AspNetCore.Components
 
         protected void LoadModel()
         {
-            Task op;
-
-            lock (_loadModelMutex)
+            // An operation is in progress currently.
+            if (_loadModelCancellationSource != null)
             {
-                // An operation is in progress currently.
-                if (_loadModelCancellationSource != null)
+                try
                 {
-                    try
-                    {
-                        _loadModelCancellationSource.Cancel();
-                    }
-                    catch (ObjectDisposedException) { }
+                    _loadModelCancellationSource.Cancel();
                 }
-
-                _loadModelCancellationSource = new CancellationTokenSource();
-                op = InternalLoadModelAsync(_loadModelCancellationSource);
+                catch (ObjectDisposedException) { }
             }
 
-            op.HandleExceptions(Logger);
+            _loadModelCancellationSource = new CancellationTokenSource();
+            InternalLoadModelProtectedAsync(_loadModelCancellationSource)
+                .HandleExceptions(Logger);
+        }
+
+        private async Task InternalLoadModelProtectedAsync(CancellationTokenSource cancellationSource)
+        {
+            using (cancellationSource)
+            {
+                try
+                {
+                    await InternalLoadModelAsync(cancellationSource)
+                        .ConfigureAwait(true);
+                }
+                catch (OperationCanceledException) when (cancellationSource.IsCancellationRequested) { }
+            }
         }
 
         private async Task InternalLoadModelAsync(CancellationTokenSource cancellationSource)
         {
-            using (cancellationSource)
-            {
-                // Yield back to the caller to leave the mutex as fast as possible.
-                await Task.Yield();
+            TModel? model = null;
+            var notifications = NotificationManager.CreateRecorder();
 
-                TModel? model = null;
-                var notifications = NotificationManager.CreateRecorder();
+            try
+            {
+                // Set the ambient alert message handler
+                _ambientNotifications.Value = notifications;
 
                 try
                 {
-                    // Set the ambient alert message handler
-                    _ambientNotifications.Value = notifications;
-
-                    try
-                    {
-                        model = await LoadModelAsync(cancellationSource.Token);
-                    }
-                    finally
-                    {
-                        // Reset the ambient alert message handler
-                        _ambientNotifications.Value = null;
-                    }
+                    model = await LoadModelAsync(cancellationSource.Token);
                 }
                 finally
                 {
-                    if (CommitLoadOperation(cancellationSource, model, notifications))
-                    {
-                        Debug.Assert(model != null);
-                        _ambientModel.Value = model;
-
-                        try
-                        {
-                            OnModelLoaded();
-                            await OnModelLoadedAsync();
-                            StateHasChanged();
-                        }
-                        finally
-                        {
-                            _ambientModel.Value = null;
-                        }
-                    }
+                    // Reset the ambient alert message handler
+                    _ambientNotifications.Value = null;
                 }
+            }
+            finally
+            {
+                await CommitLoadOperationAsync(cancellationSource, model, notifications);
             }
         }
 
-        private bool CommitLoadOperation(
+        private async ValueTask CommitLoadOperationAsync(
             CancellationTokenSource cancellationSource,
             TModel? model,
             NotificationRecorder notifications)
         {
-            if (Volatile.Read(ref _loadModelCancellationSource) != cancellationSource)
-                return false;
+            // We are running on a synchronization context, but we await on the result task of
+            // OnModelLoadedAsync. Therefore, multiple invokations of CommitLoadOperationAsync
+            // may actually run concurrently overriding the results of each other and
+            // bringing concurrency to the derived component via concurrent calls to OnModelLoadedAsync.
+            // We protect us be only executing only one CommitLoadOperationAsync call a time.
 
-            lock (_loadModelMutex)
+            using (await _loadModelMutex.LockAsync(cancellationSource.Token))
             {
                 if (_loadModelCancellationSource != cancellationSource)
-                    return false;
+                    return;
 
                 _loadModelCancellationSource = null;
 
@@ -264,16 +249,15 @@ namespace AI4E.AspNetCore.Components
                 _loadModelNotifications = notifications;
                 notifications.PublishNotifications();
 
-                IsInitiallyLoaded = true;
-
-                var success = model != null;
-
-                if (success)
+                if (model != null)
                 {
-                    _model = model;
-                }
+                    IsInitiallyLoaded = true;
+                    Model = model;
 
-                return success;
+                    OnModelLoaded();
+                    await OnModelLoadedAsync();
+                    StateHasChanged();
+                }
             }
         }
 
