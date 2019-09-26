@@ -51,7 +51,9 @@ namespace AI4E.AspNetCore.Components.Extensibility
 
         private RenderHandle _renderHandle;
         private bool _isInit;
-        //private HashSet<Type>? _viewExtensions;
+        private readonly HashSet<Type> _viewExtensions = new HashSet<Type>();
+        private ImmutableList<Assembly> _viewExtensionsAssemblies = ImmutableList<Assembly>.Empty;
+        private ImmutableList<Assembly> _previousViewExtensionsAssemblies = ImmutableList<Assembly>.Empty;
 
         /// <summary>
         /// Creates a new instance of the <see cref="ViewExtensionPlaceholder{TViewExtension}"/> type.
@@ -97,7 +99,7 @@ namespace AI4E.AspNetCore.Components.Extensibility
                 Init();
             }
 
-            Refresh(force: false);
+            Refresh(force: true);
             return Task.CompletedTask;
         }
 
@@ -158,10 +160,6 @@ namespace AI4E.AspNetCore.Components.Extensibility
             // otherwise we end up in an infinite loop.
             return type != typeof(TViewExtension);
         }
-
-        private readonly HashSet<Type> _viewExtensions = new HashSet<Type>();
-        private ImmutableList<Assembly> _viewExtensionsAssemblies = ImmutableList<Assembly>.Empty;
-        private ImmutableList<Assembly> _previousViewExtensionsAssemblies = ImmutableList<Assembly>.Empty;
 
         private void Refresh(bool force)
         {

@@ -43,8 +43,9 @@ namespace AI4E.AspNetCore.Components.Routing
     /// </summary>
     public class ModularRouter : ExtensibleRouter
     {
-        [Inject] private IAssemblySource AssemblySource { get; set; } = null!;
         protected internal RouteData? PreviousRouteData { get; private set; }
+
+        [Inject] private IAssemblySource AssemblySource { get; set; } = null!;
 
         /// <inheritdoc />
         protected override IEnumerable<Type> ResolveRoutableComponents()
