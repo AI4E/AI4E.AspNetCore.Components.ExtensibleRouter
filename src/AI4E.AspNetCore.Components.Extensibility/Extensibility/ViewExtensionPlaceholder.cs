@@ -28,12 +28,12 @@
  */
 
 using System;
-using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Diagnostics;
 using System.Linq;
 using System.Reflection;
+using System.Runtime.CompilerServices;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.Rendering;
@@ -51,7 +51,7 @@ namespace AI4E.AspNetCore.Components.Extensibility
 
         private RenderHandle _renderHandle;
         private bool _isInit;
-        private HashSet<Type>? _viewExtensions;
+        //private HashSet<Type>? _viewExtensions;
 
         /// <summary>
         /// Creates a new instance of the <see cref="ViewExtensionPlaceholder{TViewExtension}"/> type.
@@ -97,8 +97,7 @@ namespace AI4E.AspNetCore.Components.Extensibility
                 Init();
             }
 
-            UpdateViewExtensions();
-            Render();
+            Refresh(force: false);
             return Task.CompletedTask;
         }
 
@@ -113,49 +112,38 @@ namespace AI4E.AspNetCore.Components.Extensibility
             AssemblySource.AssembliesChanged -= AssembliesChanged;
         }
 
-        private void AssembliesChanged(object? sender, EventArgs e)
+        private ValueTask AssembliesChanged(
+            IAssemblySource sender,
+            IReadOnlyCollection<Assembly> assemblies)
         {
-            if (UpdateViewExtensions())
+            return _renderHandle.Dispatcher.InvokeAsync(() =>
             {
-                Render();
-            }
+                Refresh(force: false);
+
+                if (UpdateNeeded())
+                {
+                    Refresh(force: true);
+                }
+            }).AsValueTask();
         }
 
-        private bool UpdateViewExtensions()
+        private bool UpdateNeeded()
         {
-            var assemblies = AssemblySource.Assemblies;
-            var viewExtensions = assemblies.SelectMany(a => GetViewExtensions(a));
-
-            if (_viewExtensions == null)
-            {
-                _viewExtensions = new HashSet<Type>(viewExtensions);
-                return true;
-            }
-
-            if (!_viewExtensions.SetEquals(viewExtensions))
-            {
-                _viewExtensions.Clear();
-                _viewExtensions.UnionWith(viewExtensions);
-                return true;
-            }
-
-            return false;
+            return _previousViewExtensionsAssemblies.Any(assembly => !AssemblySource.ContainsAssembly(assembly));
         }
 
-        private static readonly ConcurrentDictionary<Assembly, ImmutableList<Type>> ViewExtensionsLookup
-            = new ConcurrentDictionary<Assembly, ImmutableList<Type>>();
+        // We need to store the cached values in a weak-table to allow assemblies to be unloaded.
+        private static readonly ConditionalWeakTable<Assembly, ImmutableList<Type>> ViewExtensionsLookup
+            = new ConditionalWeakTable<Assembly, ImmutableList<Type>>();
 
         private static ImmutableList<Type> GetViewExtensions(Assembly assembly)
         {
-            if (ViewExtensionsLookup.TryGetValue(assembly, out var result))
-            {
-                return result;
-            }
+            return ViewExtensionsLookup.GetValue(assembly, GetViewExtensionsUncached);
+        }
 
-            result = assembly.ExportedTypes.Where(IsViewExtension).ToImmutableList();
-            ViewExtensionsLookup.TryAdd(assembly, result);
-
-            return result;
+        private static ImmutableList<Type> GetViewExtensionsUncached(Assembly assembly)
+        {
+            return assembly.ExportedTypes.Where(IsViewExtension).ToImmutableList();
         }
 
         private static bool IsViewExtension(Type type)
@@ -171,9 +159,24 @@ namespace AI4E.AspNetCore.Components.Extensibility
             return type != typeof(TViewExtension);
         }
 
-        private void Render()
+        private readonly HashSet<Type> _viewExtensions = new HashSet<Type>();
+        private ImmutableList<Assembly> _viewExtensionsAssemblies = ImmutableList<Assembly>.Empty;
+        private ImmutableList<Assembly> _previousViewExtensionsAssemblies = ImmutableList<Assembly>.Empty;
+
+        private void Refresh(bool force)
         {
-            _renderHandle.Render(_renderFragment);
+            var assemblies = AssemblySource.Assemblies;
+            var viewExtensions = assemblies.SelectMany(a => GetViewExtensions(a));
+
+            if (force || !_viewExtensions.SetEquals(viewExtensions))
+            {
+                _previousViewExtensionsAssemblies = _viewExtensionsAssemblies;
+                _viewExtensionsAssemblies = assemblies.ToImmutableList();
+                _viewExtensions.Clear();
+                _viewExtensions.UnionWith(viewExtensions);
+
+                _renderHandle.Render(_renderFragment);
+            }
         }
 
         private void Render(RenderTreeBuilder builder)

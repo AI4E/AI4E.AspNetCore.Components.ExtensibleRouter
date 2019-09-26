@@ -30,6 +30,8 @@
 using System;
 using System.Collections.Generic;
 using System.Reflection;
+using System.Runtime.Loader;
+using System.Threading.Tasks;
 
 namespace AI4E.AspNetCore.Components.Extensibility
 {
@@ -46,6 +48,35 @@ namespace AI4E.AspNetCore.Components.Extensibility
         /// <summary>
         /// Notifies that the <see cref="Assemblies"/> collection changed.
         /// </summary>
-        event EventHandler AssembliesChanged;
+        event AssembliedChangedEventHandler? AssembliesChanged;
+
+        /// <summary>
+        /// Returns a boolean value indicating whether the specified assembly may unload.
+        /// </summary>
+        /// <param name="assembly">The <see cref="Assembly"/> to check.</param>
+        /// <returns>A boolean value indicating whether <paramref name="assembly"/> is may unload.</returns>
+        /// <exception cref="ArgumentNullException">Thrown if <paramref name="assembly"/> is <c>null</c>.</exception>
+        bool CanUnload(Assembly assembly);
+
+        /// <summary>
+        /// Returns the <see cref="AssemblyLoadContext"/> that the specified assembly was loaded from.
+        /// </summary>
+        /// <param name="assembly">The <see cref="Assembly"/>.</param>
+        /// <returns>The <see cref="AssemblyLoadContext"/> that <paramref name="assembly"/> was loaded from,
+        /// or <c>null</c> if the <see cref="AssemblyLoadContext"/> of <paramref name="assembly"/> is not available.</returns>
+        /// <exception cref="ArgumentNullException">Thrown if <paramref name="assembly"/> is <c>null</c>.</exception>
+        AssemblyLoadContext? GetAssemblyLoadContext(Assembly assembly);
+
+        /// <summary>
+        /// Returns a boolean value indicating whether the specified assembly is contained in the assembly source.
+        /// </summary>
+        /// <param name="assembly">The <see cref="Assembly"/>.</param>
+        /// <returns>A boolean value indicating whether <paramref name="assembly"/> is contained in the current assembly source.</returns>
+        /// <exception cref="ArgumentNullException">Thrown if <paramref name="assembly"/> is <c>null</c>.</exception>
+        bool ContainsAssembly(Assembly assembly);
+
+        public delegate ValueTask AssembliedChangedEventHandler(
+            IAssemblySource sender,
+            IReadOnlyCollection<Assembly> assemblies);
     }
 }

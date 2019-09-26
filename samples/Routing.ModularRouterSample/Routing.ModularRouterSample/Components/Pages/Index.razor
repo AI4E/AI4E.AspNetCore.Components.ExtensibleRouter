@@ -6,13 +6,13 @@
 <div>
     @if (PluginManager.IsPluginInstalled)
     {
-        <input type="button" @onclick="@PluginManager.UninstallPlugin" value="Uninstall Plugin" />
+        <input type="button" @onclick="@PluginManager.UninstallPluginAsync" value="Uninstall Plugin" />
 
         <a href="/plugin">Goto Plugin page</a>
     }
     else
     {
-        <input type="button" @onclick="@PluginManager.InstallPlugin" value="Install Plugin" />
+        <input type="button" @onclick="@PluginManager.InstallPluginAsync" value="Install Plugin" />
     }
 </div>
 
@@ -24,6 +24,6 @@
         <div>
             <label>Number: <InputNumber @bind-Value="@ViewExtensionContext.Number" /></label>
         </div>
-    </EditForm> 
+    </EditForm>
     <ViewExtensionPlaceholder TViewExtension="IIndexPageViewExtensionDefinition" Context="ViewExtensionContext" />
 </div>

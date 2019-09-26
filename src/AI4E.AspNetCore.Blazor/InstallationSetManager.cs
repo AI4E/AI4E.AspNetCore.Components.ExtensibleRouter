@@ -311,7 +311,7 @@ namespace AI4E.AspNetCore.Blazor
 
                 if (asm != null)
                 {
-                    _assemblyManager.AddAssembly(asm);
+                    await _assemblyManager.AddAssemblyAsync(asm);
                 }
             }
 

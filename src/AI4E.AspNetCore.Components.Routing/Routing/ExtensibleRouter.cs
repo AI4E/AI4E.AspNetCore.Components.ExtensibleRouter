@@ -80,6 +80,8 @@ namespace AI4E.AspNetCore.Components.Routing
 
         private RouteTable Routes { get; set; } = null!;
 
+        protected internal RouteData? RouteData { get; private set; }
+
         /// <inheritdoc />
         public void Attach(RenderHandle renderHandle)
         {
@@ -184,6 +186,8 @@ namespace AI4E.AspNetCore.Components.Routing
         /// <param name="success">A boolean value indicating routing success.</param>
         protected virtual void OnAfterRefresh(bool success) { }
 
+        protected virtual void OnAfterRouteDataSet() { }
+
         /// <summary>
         /// Refreshes the router.
         /// </summary>
@@ -203,7 +207,8 @@ namespace AI4E.AspNetCore.Components.Routing
             Routes.Route(context);
 
             var handlerFound = !(context.Handler is null);
-            OnAfterRefresh(handlerFound);
+
+            OnAfterRefresh(handlerFound); // TODO: Rename to OnRoutesSet?
 
             if (handlerFound)
             {
@@ -218,13 +223,15 @@ namespace AI4E.AspNetCore.Components.Routing
                     Log.NavigatingToComponent(_logger, context.Handler!, locationPath, _baseUri);
                 }
 
-                var routeData = new RouteData(
+                RouteData = new RouteData(
                     context.Handler,
                     context.Parameters ?? EmptyParametersDictionary);
 
+                OnAfterRouteDataSet();
+
                 if (Found != null)
                 {
-                    _renderHandle.Render(Found(routeData));
+                    _renderHandle.Render(Found(RouteData));
                 }
                 else
                 {
@@ -233,6 +240,10 @@ namespace AI4E.AspNetCore.Components.Routing
             }
             else
             {
+                RouteData = null;
+
+                OnAfterRouteDataSet();
+
                 if (!isNavigationIntercepted)
                 {
                     if (_logger != null)
@@ -276,6 +287,26 @@ namespace AI4E.AspNetCore.Components.Routing
             }
 
             return Task.CompletedTask;
+        }
+
+        /// <summary>
+        /// Executes the supplied work item on the associated renderer's
+        /// synchronization context.
+        /// </summary>
+        /// <param name="workItem">The work item to execute.</param>
+        protected Task InvokeAsync(Action workItem)
+        {
+            return _renderHandle.Dispatcher.InvokeAsync(workItem);
+        }
+
+        /// <summary>
+        /// Executes the supplied work item on the associated renderer's
+        /// synchronization context.
+        /// </summary>
+        /// <param name="workItem">The work item to execute.</param>
+        protected Task InvokeAsync(Func<Task> workItem)
+        {
+            return _renderHandle.Dispatcher.InvokeAsync(workItem);
         }
 
         private static class Log
